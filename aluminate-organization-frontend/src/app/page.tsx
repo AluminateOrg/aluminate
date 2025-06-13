@@ -14,7 +14,7 @@ export default function Home() {
 
   return (
       <div>
-        <h1>Response from Backendhh:</h1>
+        <h1>Response from Backend: Hii Yes Brooo</h1>
         <p>{message}</p>
       </div>
   );
