@@ -1,7 +1,7 @@
 services:
   frontend:
     volumes:
-      - ./aluminate-organization-frontend:/app
+      - ./aluminate-organization-frontend:/app:cached
       - /app/node_modules
     working_dir: /app
     command: npm run dev
