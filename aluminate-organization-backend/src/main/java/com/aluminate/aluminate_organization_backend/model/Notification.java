@@ -23,9 +23,14 @@ public class Notification {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-    private String category;
+    /** We have some predefined notification types */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private NotificationType type;
+
     private String title;
     private String message;
     private LocalDate date;
     private boolean isRead;
 }
+
