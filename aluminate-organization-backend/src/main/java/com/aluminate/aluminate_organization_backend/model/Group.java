@@ -1,12 +1,11 @@
 package com.aluminate.aluminate_organization_backend.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -26,4 +25,8 @@ public class Group {
     private int currentMembers;
     private boolean isActive;
     private LocalDate createdDate;
+
+    /** To Access group members via MemberGroup entity */
+    @OneToMany(mappedBy = "group")
+    private Set<MemberGroup> memberGroups = new HashSet<>();
 }
