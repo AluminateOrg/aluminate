@@ -39,13 +39,26 @@ public class Member {
     @OneToMany(mappedBy = "member")
     private Set<MemberEvent> memberEvents = new HashSet<>();
 
+    /** One member can donate multiple times */
     @OneToMany(mappedBy = "member")
     private Set<Donation> donations = new HashSet<>();
+
+    /** One member can receive multiple notifications */
+    @OneToMany(mappedBy = "member")
+    private Set<Notification> notifications = new HashSet<>();
+
 
     /** Utility method to add donation */
     public void addDonation(Donation donation) {
         donations.add(donation);
         donation.setMember(this);
     }
+
+    /** Utility method to add notification */
+    public void addNotification(Notification notification) {
+        notifications.add(notification);
+        notification.setMember(this);
+    }
+
 
 }
