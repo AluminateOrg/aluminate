@@ -33,4 +33,8 @@ public class Member {
     /** One member can be a member of multiple groups */
     @OneToMany(mappedBy = "member")
     private Set<MemberGroup> memberGroups = new HashSet<>();
+
+    /** One member can be a member of multiple events */
+    @OneToMany(mappedBy = "member")
+    private Set<MemberEvent> memberEvents = new HashSet<>();
 }
