@@ -1,10 +1,10 @@
 package com.aluminate.aluminate_organization_backend.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -29,4 +29,8 @@ public class Member {
     private String company;
     private String position;
     private int batch;
+
+    /** One member can be a member of multiple groups */
+    @OneToMany(mappedBy = "member")
+    private Set<MemberGroup> memberGroups = new HashSet<>();
 }
