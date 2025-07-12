@@ -25,7 +25,11 @@ public class Campaign {
     private LocalDate startDate;
     private LocalDate endDate;
     private BigDecimal target;
-    private String Category;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private CampaignType type;
+
     private BigDecimal currentAmount;
     private int totalDonors;
     private boolean isActive;
