@@ -38,4 +38,14 @@ public class Member {
     /** One member can be a member of multiple events */
     @OneToMany(mappedBy = "member")
     private Set<MemberEvent> memberEvents = new HashSet<>();
+
+    @OneToMany(mappedBy = "member")
+    private Set<Donation> donations = new HashSet<>();
+
+    /** Utility method to add donation */
+    public void addDonation(Donation donation) {
+        donations.add(donation);
+        donation.setMember(this);
+    }
+
 }
