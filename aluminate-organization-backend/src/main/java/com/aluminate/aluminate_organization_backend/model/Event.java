@@ -24,7 +24,11 @@ public class Event {
     private Long id;
     private String title;
     private String description;
-    private String type;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private EventType type;
+
     private String location;
     private LocalDate startDate;
     private LocalDate endDate;
