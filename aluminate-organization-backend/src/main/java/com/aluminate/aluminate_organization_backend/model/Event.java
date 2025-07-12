@@ -1,15 +1,14 @@
 package com.aluminate.aluminate_organization_backend.model;
 
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -36,5 +35,8 @@ public class Event {
     private BigDecimal price;
     private boolean isPublic;
     private boolean requiresApproval;
+
+    @OneToMany(mappedBy = "event")
+    private Set<MemberEvent> memberEvents = new HashSet<>();
 
 }
