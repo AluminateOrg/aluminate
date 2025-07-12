@@ -21,7 +21,7 @@ public class MemberGroup {
 
     @ManyToOne
     @JoinColumn(name = "group_id", nullable = false)
-    private Group group;
+    private Groups group;
 
     private boolean isApproved; // true if the member has been approved to join the group
     private String role; // "ADMIN", "MEMBER"

@@ -15,7 +15,7 @@ import java.util.Set;
 @Builder
 @EqualsAndHashCode(of = {"id"})
 
-public class Group {
+public class Groups {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
