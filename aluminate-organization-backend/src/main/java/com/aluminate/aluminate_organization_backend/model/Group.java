@@ -13,6 +13,7 @@ import java.util.Set;
 @AllArgsConstructor
 @Entity
 @Builder
+@EqualsAndHashCode(of = {"id"})
 
 public class Group {
     @Id

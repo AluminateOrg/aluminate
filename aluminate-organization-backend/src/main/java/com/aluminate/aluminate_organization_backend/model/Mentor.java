@@ -13,6 +13,7 @@ import java.util.Set;
 @NoArgsConstructor
 @Entity
 @Builder
+@EqualsAndHashCode(of = {"id"})
 
 public class Mentor {
     @Id
