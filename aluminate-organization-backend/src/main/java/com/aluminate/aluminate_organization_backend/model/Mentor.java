@@ -41,4 +41,23 @@ public class Mentor {
     private int maxMentees;
     private Double rating;
     private int sessionCount;
+
+    @OneToMany(
+            mappedBy = "mentor",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private Set<MentorProgram> programs = new HashSet<>();
+
+    /** Utility methods for maintaining the relationship */
+    public void addProgram(MentorProgram program) {
+        programs.add(program);
+        program.setMentor(this);
+    }
+
+    public void removeProgram(MentorProgram program) {
+        programs.remove(program);
+        program.setMentor(null);
+    }
+
 }
