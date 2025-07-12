@@ -1,0 +1,26 @@
+package com.aluminate.aluminate_organization_backend.model;
+
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import lombok.*;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Entity
+@Builder
+@EqualsAndHashCode(of = {"id"})
+
+public class OrganizationPrivacySettings {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private boolean allowMemberSearch;
+    private boolean showMemberCount;
+    private boolean allowGuestEvents;
+}
