@@ -3,8 +3,8 @@ package com.aluminate.aluminate_organization_backend.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.sql.Time;
-import java.util.Date;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -33,8 +33,8 @@ public class MentorProgram {
     )
     private Set<Member> participants = new HashSet<>();
 
-    private Date date;
-    private Time time;
+    private LocalDate date;
+    private LocalTime time;
     private String programUrl;
 
 }
