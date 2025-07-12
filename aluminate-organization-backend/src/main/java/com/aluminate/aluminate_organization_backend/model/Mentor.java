@@ -31,6 +31,7 @@ public class Mentor {
     private String portfolioUrl;
     private String motivation;
 
+    /** Mentor languages, each mentor can have multiple languages be entered from a form field */
     @ElementCollection
     @CollectionTable(name = "mentor_languages", joinColumns = @JoinColumn(name = "mentor_id"))
     @Column(name = "language")
