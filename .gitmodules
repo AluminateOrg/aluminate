@@ -1,0 +1,3 @@
+[submodule "aluminate-organization-frontend"]
+	path = aluminate-organization-frontend
+	url = https://github.com/AluminateOrg/aluminate-frontend.git
