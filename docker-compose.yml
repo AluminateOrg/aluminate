@@ -30,6 +30,12 @@ services:
       context: ./aluminate-organization-frontend
     ports:
       - "3000:3000"
+    volumes:
+      - ./aluminate-organization-frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true
     depends_on:
       - backend
     networks:
