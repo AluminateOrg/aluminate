@@ -25,6 +25,16 @@ services:
     networks:
       - aluminate-network
 
+  frontend:
+    build:
+      context: ./aluminate-organization-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - aluminate-network
+
 volumes:
   pgdata:
 
