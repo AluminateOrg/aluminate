@@ -17,4 +17,5 @@ RUN apt-get update && \
 EXPOSE 8098
 
 # Run with spring-boot:run for development (enables hot reload)
-CMD ["mvn", "spring-boot:run", "-Dspring-boot.run.jvmArguments='-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005'"]
+#CMD ["mvn", "spring-boot:run", "-Dspring-boot.run.jvmArguments='-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005'"]
+CMD ["mvn", "spring-boot:run"]
