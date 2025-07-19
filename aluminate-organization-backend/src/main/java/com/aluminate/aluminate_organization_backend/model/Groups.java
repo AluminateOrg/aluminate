@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -20,12 +21,16 @@ public class Groups {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String description;
 
     @Enumerated(EnumType.STRING)
     private GroupCategory category;
 
+    @Column(nullable = false, unique = true)
     private String name;
+
+    @Column(nullable = false)
     private int maxMembers;
 
     @Builder.Default
@@ -39,6 +44,8 @@ public class Groups {
 
     @Builder.Default
     private LocalDate createdDate = LocalDate.now(); // date when the group was created
+
+    private LocalDateTime deletedAt; // timestamp when the group was deleted, null if not deleted
 
     /** To Access group members via MemberGroup entity */
     @OneToMany(mappedBy = "group")
