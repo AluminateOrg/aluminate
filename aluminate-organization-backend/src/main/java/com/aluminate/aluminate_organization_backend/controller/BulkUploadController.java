@@ -51,6 +51,7 @@ public class BulkUploadController {
     @PostMapping("/bulk-finalize")
     public ResponseEntity<Map<String, Object>> finalizeBulkUpload(@RequestBody List<MemberRowDTO> correctedRows) throws JsonProcessingException {
         List<MemberRowDTO> validated = annotationValidationService.validateRows(correctedRows);
+        System.out.println("Validated rows: " + validated);
         List<MemberRowDTO> invalidRows = validated.stream().filter(r -> "invalid".equals(r.getStatus())).toList();
 
         List<MemberRowDTO> validRows = validated.stream().filter(r -> "valid".equals(r.getStatus())).toList();

@@ -20,7 +20,7 @@ public class MemberRowDTO {
     private String email;
 
     @NotBlank(message = "Phone number is required")
-    @Pattern(regexp = "^(\\+94|0)?[0-9]{10}$", message = "Invalid phone number format")
+    @Pattern(regexp = "^\\+94\\d{9}$", message = "Phone must start with +94 and have 12 digits")
     private String phone;
 
     @NotBlank(message = "Registration number is required")
