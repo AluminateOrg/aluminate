@@ -1,10 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
+<<<<<<< HEAD
     <data-source source="LOCAL" name="aluminatedb@localhost" uuid="e27059ca-4283-4ccd-a658-3a50d99fb093">
       <driver-ref>postgresql</driver-ref>
       <synchronize>true</synchronize>
       <imported>true</imported>
+=======
+    <data-source source="LOCAL" name="aluminatedb@localhost" uuid="d6d99230-f2bd-4bd5-95bf-6423817d69bf">
+      <driver-ref>postgresql</driver-ref>
+      <synchronize>true</synchronize>
+      <imported>true</imported>
+      <remarks>$PROJECT_DIR$/aluminate-organization-backend/src/main/resources/application.properties</remarks>
+>>>>>>> 4a065db65afa1f9038a034504b0d122078b76643
       <jdbc-driver>org.postgresql.Driver</jdbc-driver>
       <jdbc-url>jdbc:postgresql://localhost:5432/aluminatedb</jdbc-url>
       <jdbc-additional-properties>

@@ -29,7 +29,12 @@ public class Member {
     private String degree;
     private String company;
     private String position;
+    private String linkedinUrl;
+    private String githubUrl;
+    private String websiteUrl;
     private int batch;
+    @Builder.Default
+    private boolean isActive = true;
 
     /** One member can be a member of multiple groups */
     @OneToMany(mappedBy = "member")
