@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.util.List;
+
 
 @Data
 @Builder
@@ -25,4 +27,6 @@ public class MemberRequestDTO {
     private String githubUrl;
     private String websiteUrl;
     private int batch;
+    private List<Long> groupIds;
+
 }
