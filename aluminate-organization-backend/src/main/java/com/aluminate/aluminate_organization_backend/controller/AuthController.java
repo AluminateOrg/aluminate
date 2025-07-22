@@ -23,7 +23,8 @@ package com.aluminate.aluminate_organization_backend.controller;
 
         @PostMapping("/login")
         public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-            String token = authService.login(request.getEmail(), request.getPassword());
-            return ResponseEntity.ok(new LoginResponse(token));
+            LoginResponse response = authService.login(request.getEmail(), request.getPassword(),request.getRole());
+            return ResponseEntity.ok(response);
         }
+
     }

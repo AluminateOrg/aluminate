@@ -1,7 +1,10 @@
 package com.aluminate.aluminate_organization_backend.service.auth;
 
 import com.aluminate.aluminate_organization_backend.config.util.Jwt;
+import com.aluminate.aluminate_organization_backend.dto.login.LoginResponse;
 import com.aluminate.aluminate_organization_backend.model.Member;
+import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -16,7 +19,11 @@ public class AuthService {
         this.jwt = jwt;
     }
 
-    public String login(String email, String password) {
+    public LoginResponse login(String email, String password,String role) {
+        //check if role is 'member' or 'admin'
+        if (!role.equals("member") && !role.equals("admin")) {
+            throw new RuntimeException("Invalid role");
+        }
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Invalid email"));
 
@@ -24,7 +31,12 @@ public class AuthService {
             throw new RuntimeException("Invalid password");
         }
 
-        return jwt.generateToken(email);
+        //return token & member
+
+        return new LoginResponse(
+                jwt.generateToken(email),
+                member
+        );
     }
 
 }
