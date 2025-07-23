@@ -1,4 +1,4 @@
-package com.aluminate.aluminate_organization_backend.dto;
+package com.aluminate.aluminate_organization_backend.dto.group;
 
 import com.aluminate.aluminate_organization_backend.model.GroupCategory;
 import lombok.Builder;
