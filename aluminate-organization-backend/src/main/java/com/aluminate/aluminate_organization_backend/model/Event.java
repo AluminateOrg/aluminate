@@ -1,11 +1,13 @@
 package com.aluminate.aluminate_organization_backend.model;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -29,6 +31,10 @@ public class Event {
     @Column(nullable = false)
     private EventType type;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private EventStatus status;
+
     private String location;
     private LocalDate startDate;
     private LocalDate endDate;
@@ -38,8 +44,14 @@ public class Event {
     private int currentParticipants;
     private LocalDate registrationDeadline;
     private BigDecimal price;
+    @Column(name = "is_public")
+    @JsonProperty("public")
     private boolean isPublic;
     private boolean requiresApproval;
+
+    @Builder.Default
+    private boolean isDeleted = false;
+    private LocalDateTime deletedAt;
 
     @OneToMany(mappedBy = "event")
     private Set<MemberEvent> memberEvents = new HashSet<>();
