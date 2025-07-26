@@ -2,7 +2,7 @@ package com.aluminate.aluminate_organization_backend.controller;
 
 import com.aluminate.aluminate_organization_backend.dto.MemberRequestDTO;
 import com.aluminate.aluminate_organization_backend.model.Member;
-import com.aluminate.aluminate_organization_backend.response.ApiResponse;
+import com.aluminate.aluminate_organization_backend.dto.response.ApiResponse;
 import com.aluminate.aluminate_organization_backend.service.members.IMemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

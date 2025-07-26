@@ -6,7 +6,10 @@ import lombok.Getter;
 public enum EventType {
     SOCIAL("Social Event"),
     WORKSHOP("Workshop"),
-    OTHER("Other Event");
+    MEETING("Meeting"),
+    FUNDRAISING("Fundraising Event"),
+    NETWORKING("Networking Event"),
+    WEBINAR("Webinar");
 
     private final String displayName;
 
