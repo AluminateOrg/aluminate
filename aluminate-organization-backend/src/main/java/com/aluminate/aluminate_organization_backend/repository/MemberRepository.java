@@ -1,7 +1,6 @@
 package com.aluminate.aluminate_organization_backend.repository;
 
 import com.aluminate.aluminate_organization_backend.model.Member;
-import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -16,4 +15,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     @Query("SELECT m.email FROM Member m WHERE m.email IS NOT NULL ")
     List<String> findAllEmails();
+
+    List<Member> findAll();
+
 }

@@ -7,7 +7,10 @@ import com.aluminate.aluminate_organization_backend.model.MemberGroup;
 import com.aluminate.aluminate_organization_backend.repository.GroupsRepository;
 import com.aluminate.aluminate_organization_backend.repository.MemberGroupRepository;
 import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
+import com.aluminate.aluminate_organization_backend.service.EmailService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,9 +21,15 @@ public class MemberServiceImpl implements IMemberService {
     private final MemberGroupRepository memberGroupRepository;
     private final GroupsRepository groupRepository; // ✅ Add this
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    @Autowired
+    private EmailService emailService;
+
     @Override
     public Member createMember(MemberRequestDTO dto) {
         // Save the member
+        String rawPassword = dto.getPassword();
         Member member = Member.builder()
                 .name(dto.getName())
                 .nic(dto.getNic())
@@ -29,10 +38,12 @@ public class MemberServiceImpl implements IMemberService {
                 .regNo(dto.getRegNo())
                 .address(dto.getAddress())
                 .batch(dto.getBatch())
-                .password(dto.getPassword())
+                .password(passwordEncoder.encode(rawPassword))
                 .build();
 
         Member savedMember = memberRepository.save(member);
+        //send welcome email
+        emailService.sendEmail(dto.getEmail(), dto.getName(), dto.getNic());
 
         // Link member to groups
         for (Long groupId : dto.getGroupIds()) {

@@ -30,6 +30,7 @@ public class MemberRowDTO {
     private Integer batch;
 
     private String status = "valid";
+
     private Map<String, String> errors = new HashMap<>();
     private Map<String, String> suggestions = new HashMap<>();
 
