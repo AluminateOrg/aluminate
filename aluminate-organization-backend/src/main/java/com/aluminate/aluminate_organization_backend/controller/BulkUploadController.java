@@ -6,6 +6,8 @@ import com.aluminate.aluminate_organization_backend.service.CsvParserService;
 import com.aluminate.aluminate_organization_backend.service.GeminiValidationService;
 import com.aluminate.aluminate_organization_backend.service.MemberService;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,9 +32,22 @@ public class BulkUploadController {
     private MemberService memberService;
 
     @PostMapping("/bulk-upload")
-    public ResponseEntity<Map<String, Object>> bulkUpload(@RequestParam("file") MultipartFile file) throws IOException, JsonProcessingException {
+    public ResponseEntity<Map<String, Object>> bulkUpload(@RequestParam("file") MultipartFile file, @RequestParam("groups") String groupsJson) throws IOException, JsonProcessingException {
         List<MemberRowDTO> parsedRows = csvParserService.parseCSV(file);
 
+        System.out.println("Parsed rows: " + parsedRows);
+        ObjectMapper objectMapper = new ObjectMapper();
+        int groupId;
+        try{
+            List<String> groups = objectMapper.readValue(groupsJson, new TypeReference<List<String>>() {});
+            if (groups.isEmpty()){
+                return ResponseEntity.badRequest().body(Map.of("message", "No groups provided"));
+            }
+            groupId = Integer.parseInt(groups.get(0));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Invalid group ID format"));
+        }
+        System.out.println("Group ID: " + groupId);
         //annotation validation
         List<MemberRowDTO> validated = annotationValidationService.validateRows(parsedRows);
 
@@ -46,7 +61,7 @@ public class BulkUploadController {
         }
         //save valid rows
         List<MemberRowDTO> validRows = validated.stream().filter(r -> "valid".equals(r.getStatus())).toList();
-        int savedCount = memberService.saveValidMembers(validRows);
+        int savedCount = memberService.saveValidMembers(validRows, groupId);
         Map<String, Object> response = new HashMap<>();
         response.put("savedCount", savedCount);
         response.put("invalidRows", invalidRows);
@@ -54,26 +69,32 @@ public class BulkUploadController {
     }
 
     @PostMapping("/bulk-finalize")
-    public ResponseEntity<Map<String, Object>> finalizeBulkUpload(@RequestBody List<MemberRowDTO> correctedRows) throws JsonProcessingException {
+    public ResponseEntity<Map<String, Object>> finalizeBulkUpload(@RequestBody Map<String, Object> requestBody) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+
+        // ✅ 1. Extract and parse the rows
+        List<MemberRowDTO> correctedRows = mapper.convertValue(requestBody.get("rows"), new TypeReference<List<MemberRowDTO>>() {});
         System.out.println("Corrected rows: " + correctedRows);
 
-        // 1. Initial validation
+        // ✅ 2. Extract group ID
+        List<String> groups = mapper.convertValue(requestBody.get("groups"), new TypeReference<List<String>>() {});
+        if (groups.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Group ID is required"));
+        }
+        String groupId = groups.get(0); // Single group ID
+        System.out.println("Finalizing for group ID: " + groupId);
+
+        // ✅ 3. Validate rows
         List<MemberRowDTO> validated = annotationValidationService.validateRows(correctedRows);
         System.out.println("After annotation validation: " + validated);
 
-        // Separate invalid rows
+        // ✅ 4. Gemini validation if needed
         List<MemberRowDTO> invalidRows = validated.stream()
                 .filter(r -> "invalid".equalsIgnoreCase(r.getStatus()))
                 .toList();
 
-        // 2. If there are invalid rows, run Gemini validation
         if (!invalidRows.isEmpty()) {
-            System.out.println("Invalid rows before Gemini: " + invalidRows);
-
-            // Call Gemini to validate/fix invalid rows
             List<MemberRowDTO> geminiValidated = geminiValidationService.validateWithGemini(invalidRows);
-
-            // Merge Gemini results back into validated list
             Map<String, MemberRowDTO> geminiMap = geminiValidated.stream()
                     .collect(Collectors.toMap(MemberRowDTO::getNic, g -> g));
 
@@ -84,37 +105,29 @@ public class BulkUploadController {
                 }
             }
 
-            // Re-check invalid rows after Gemini
             invalidRows = validated.stream()
                     .filter(r -> "invalid".equalsIgnoreCase(r.getStatus()))
                     .toList();
 
-            // If still invalid rows, return them with 400 Bad Request
             if (!invalidRows.isEmpty()) {
-                Map<String, Object> response = new HashMap<>();
-                response.put("message", "Some rows are still invalid after Gemini validation.");
-                response.put("invalidRows", invalidRows);
-                System.out.println("Invalid rows after Gemini: " + invalidRows);
-                return ResponseEntity.badRequest().body(response);
+                return ResponseEntity.badRequest().body(Map.of(
+                        "message", "Some rows are still invalid after Gemini validation.",
+                        "invalidRows", invalidRows
+                ));
             }
-
-            System.out.println("All invalid rows corrected after Gemini validation.");
         }
 
-        // 3. Save valid rows
+        // ✅ 5. Save valid members and assign to group
         List<MemberRowDTO> validRows = validated.stream()
                 .filter(r -> "valid".equalsIgnoreCase(r.getStatus()))
                 .toList();
 
-        int savedCount = memberService.saveValidMembers(validRows);
+        int savedCount = memberService.saveValidMembers(validRows, Long.parseLong(groupId));
 
-        // 4. Prepare response
-        Map<String, Object> response = new HashMap<>();
-        response.put("savedCount", savedCount);
-        response.put("invalidRows", invalidRows); // Will be empty if all are valid
-        System.out.println("Final response: " + response);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(Map.of(
+                "savedCount", savedCount,
+                "invalidRows", invalidRows
+        ));
     }
 
 }
