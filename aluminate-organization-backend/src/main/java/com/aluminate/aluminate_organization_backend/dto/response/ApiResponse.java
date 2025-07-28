@@ -1,4 +1,4 @@
-package com.aluminate.aluminate_organization_backend.response;
+package com.aluminate.aluminate_organization_backend.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

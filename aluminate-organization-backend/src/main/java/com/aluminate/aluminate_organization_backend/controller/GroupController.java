@@ -1,9 +1,9 @@
 package com.aluminate.aluminate_organization_backend.controller;
 
-import com.aluminate.aluminate_organization_backend.dto.GroupResponseDTO;
+import com.aluminate.aluminate_organization_backend.dto.group.GroupResponseDTO;
 import com.aluminate.aluminate_organization_backend.model.Groups;
-import com.aluminate.aluminate_organization_backend.request.CreateGroupRequest;
-import com.aluminate.aluminate_organization_backend.response.ApiResponse;
+import com.aluminate.aluminate_organization_backend.dto.group.CreateGroupRequest;
+import com.aluminate.aluminate_organization_backend.dto.response.ApiResponse;
 import com.aluminate.aluminate_organization_backend.service.groups.IGroupsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

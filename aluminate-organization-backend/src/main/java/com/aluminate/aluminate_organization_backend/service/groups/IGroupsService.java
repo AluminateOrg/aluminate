@@ -1,8 +1,8 @@
 package com.aluminate.aluminate_organization_backend.service.groups;
 
-import com.aluminate.aluminate_organization_backend.dto.GroupResponseDTO;
+import com.aluminate.aluminate_organization_backend.dto.group.GroupResponseDTO;
 import com.aluminate.aluminate_organization_backend.model.Groups;
-import com.aluminate.aluminate_organization_backend.request.CreateGroupRequest;
+import com.aluminate.aluminate_organization_backend.dto.group.CreateGroupRequest;
 
 import java.util.List;
 
