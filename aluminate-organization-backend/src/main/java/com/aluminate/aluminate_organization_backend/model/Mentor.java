@@ -24,13 +24,14 @@ public class Mentor {
     @JoinColumn(name = "member_id", referencedColumnName = "id")
     private Member member;
 
-    private String availability;
+
     private int yearsOfExperience;
     private BigDecimal hourlyRate;
     private String bio;
     private String linkedInUrl;
     private String portfolioUrl;
     private String motivation;
+    private boolean isApproved;
 
     /** Mentor languages, each mentor can have multiple languages be entered from a form field */
     @ElementCollection
