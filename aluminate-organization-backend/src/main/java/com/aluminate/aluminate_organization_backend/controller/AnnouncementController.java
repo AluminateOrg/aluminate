@@ -21,21 +21,36 @@ public class AnnouncementController {
 
     @PostMapping("/multicast-for-all-emails")
     public ResponseEntity<Map<String, Object>> sendEmailAnnouncement(@RequestBody AnnouncementRequest request) {
+        int sendCount = 0;
+        Map<String, Object> response = new HashMap<>();
         if ("all".equals(request.getRecipients())){
-            int sendCount = announcementService.sendEmailAnnouncement(request);
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", "Email announcement sent successfully");
-            response.put("sendCount", sendCount);
+            if (request.isSendEmail()) {
+                sendCount = announcementService.sendEmailAnnouncement(request);
+                response.put("message", "Email announcement sent successfully");
+                response.put("sendCount", sendCount);
+            }
+            if (request.isSendPush()) {
+                sendCount = announcementService.sendNotificationToAllMembers(request);
+                response.put("message", "Push notification sent successfully");
+                response.put("sendCount", sendCount);
+            }
             return ResponseEntity.ok(response);
         } else if ("groups".equals(request.getRecipients())) {
-            int sendCount = announcementService.sendEmailToSelectedGroups(request);
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", "Email announcement sent to selected groups successfully");
-            response.put("sendCount", sendCount);
+            if (request.isSendEmail()) {
+                sendCount = announcementService.sendEmailToSelectedGroups(request);
+                response.put("message", "Email announcement sent successfully");
+                response.put("sendCount", sendCount);
+            }
+
+            if (request.isSendPush()) {
+                sendCount = announcementService.sendNotificationToSelectedGroups(request);
+                response.put("message", "Push notification sent successfully");
+                response.put("sendCount", sendCount);
+            }
+
             return ResponseEntity.ok(response);
         } else {
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", "Invalid recipients type");
+            response.put("message", "Invalid recipients");
             return ResponseEntity.badRequest().body(response);
         }
     }
