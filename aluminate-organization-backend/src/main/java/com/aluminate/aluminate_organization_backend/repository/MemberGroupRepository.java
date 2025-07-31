@@ -15,4 +15,6 @@ public interface MemberGroupRepository extends JpaRepository<MemberGroup, Long> 
 
     @Query("SELECT mg.group.id FROM MemberGroup mg WHERE mg.member.id = :id")
     List<Long> findGroupIdsByMemberId(@Param("id") Long id);
+
+    List<String> findMembersGroupById(Long id);
 }
