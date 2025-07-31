@@ -2,6 +2,7 @@ package com.aluminate.aluminate_organization_backend.service.announcement;
 
 import com.aluminate.aluminate_organization_backend.dto.announcement.AnnouncementRequest;
 import com.aluminate.aluminate_organization_backend.model.Member;
+import com.aluminate.aluminate_organization_backend.model.MemberGroup;
 import com.aluminate.aluminate_organization_backend.repository.GroupsRepository;
 import com.aluminate.aluminate_organization_backend.repository.MemberGroupRepository;
 import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
@@ -22,6 +23,7 @@ public class AnnouncementService {
     @Autowired
     private MemberGroupRepository memberGroupRepository;
 
+
     public int sendEmailAnnouncement(AnnouncementRequest announcementRequest) {
         if (!announcementRequest.isSendEmail()) return 0;
 
@@ -37,16 +39,27 @@ public class AnnouncementService {
         return emails.size();
     }
 
-//    public int sendForGroups (AnnouncementRequest announcementRequest) {
-//        if (!announcementRequest.isSendEmail()) return 0;
-//        List<String> members = List.of();
-//        List<String> emails = List.of();
-//        List<Integer> groupsIds = announcementRequest.getSelectedGroups();
-//        if ("groups".equals(announcementRequest.getRecipients())){
-//            for (long id: groupsIds) {
-//                members = memberGroupRepository.findMembersGroupById(id);
-//            }
-//            for (long id: members)
-//        }
-//    }
+    //function to send email to members of selected groups
+    public int sendEmailToSelectedGroups(AnnouncementRequest announcementRequest) {
+        if (!announcementRequest.isSendEmail()) return 0;
+        List<Long> groupIds = announcementRequest.getSelectedGroups().stream()
+                .map(groupIdStr -> Long.parseLong(String.valueOf(groupIdStr)))
+                .toList();
+        List<MemberGroup> memberGroups = memberGroupRepository.findByGroup_IdIn(groupIds);
+        if (memberGroups.isEmpty()){
+            System.out.println("No members found");
+            return 0;
+        }
+        System.out.println("Sending email to members: " + memberGroups.size() + " members found.");
+        List<String> emails = memberGroups.stream()
+                        .map(mg -> mg.getMember().getEmail())
+                        .filter(email -> email != null && !email.isEmpty())
+                        .distinct()
+                        .toList();
+        System.out.println("emails: " + emails);
+        for(String email: emails) {
+            emailService.sendEmail(email, announcementRequest.getTitle(), announcementRequest.getMessage());
+        }
+        return emails.size();
+    }
 }

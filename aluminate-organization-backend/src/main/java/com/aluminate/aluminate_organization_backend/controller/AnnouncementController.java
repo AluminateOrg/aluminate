@@ -21,15 +21,22 @@ public class AnnouncementController {
 
     @PostMapping("/multicast-for-all-emails")
     public ResponseEntity<Map<String, Object>> sendEmailAnnouncement(@RequestBody AnnouncementRequest request) {
-        int sendCount = announcementService.sendEmailAnnouncement(request);
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "Email announcement sent successfully");
-        response.put("sendCount", sendCount);
-        return ResponseEntity.ok(response);
+        if ("all".equals(request.getRecipients())){
+            int sendCount = announcementService.sendEmailAnnouncement(request);
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Email announcement sent successfully");
+            response.put("sendCount", sendCount);
+            return ResponseEntity.ok(response);
+        } else if ("groups".equals(request.getRecipients())) {
+            int sendCount = announcementService.sendEmailToSelectedGroups(request);
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Email announcement sent to selected groups successfully");
+            response.put("sendCount", sendCount);
+            return ResponseEntity.ok(response);
+        } else {
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Invalid recipients type");
+            return ResponseEntity.badRequest().body(response);
+        }
     }
-
-//    @PostMapping("/send-for-groups")
-//    public ResponseEntity<Map<String, Object>> sendForGroupAnnouncement(@RequestBody AnnouncementRequest request) {
-//
-//    }
 }
