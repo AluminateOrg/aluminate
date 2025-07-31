@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -26,4 +27,9 @@ public class AnnouncementController {
         response.put("sendCount", sendCount);
         return ResponseEntity.ok(response);
     }
+
+//    @PostMapping("/send-for-groups")
+//    public ResponseEntity<Map<String, Object>> sendForGroupAnnouncement(@RequestBody AnnouncementRequest request) {
+//
+//    }
 }
