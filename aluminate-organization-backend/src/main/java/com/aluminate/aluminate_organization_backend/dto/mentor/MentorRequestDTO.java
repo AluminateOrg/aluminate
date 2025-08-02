@@ -19,6 +19,7 @@ public class MentorRequestDTO {
     private String portfolioUrl;
     private String motivation;
     private Set<String> languages;
+    private Set<String> skills;
     private String preferredMenteeLevel;
     private int maxMentees;
 }
