@@ -10,6 +10,7 @@ import com.aluminate.aluminate_organization_backend.repository.MentorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,10 +31,10 @@ public class MentorService {
 
         Mentor mentor =  Mentor.builder()
                 .member(member)
-                .yearsOfExperience(request.getYearsOfExperience())
+                .yearsOfExperience(request.getYearsExperience())
                 .hourlyRate(request.getHourlyRate())
                 .bio(request.getBio())
-                .linkedInUrl(request.getLinkedInUrl())
+                .linkedInUrl(request.getLinkedinUrl())
                 .portfolioUrl(request.getPortfolioUrl())
                 .motivation(request.getMotivation())
                 .languages(request.getLanguages())
@@ -43,6 +44,8 @@ public class MentorService {
                 .isApproved(false)
                 .rating(0.0)
                 .sessionCount(0)
+                .createdAt(LocalDateTime.now())
+                .availability(request.getAvailability())
                 .build();
 
         Mentor saved = mentorRepository.save(mentor);
