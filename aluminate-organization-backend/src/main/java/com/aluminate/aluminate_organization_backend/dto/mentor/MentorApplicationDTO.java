@@ -22,7 +22,7 @@ public class MentorApplicationDTO {
     private String currentPosition;
     private String company;
     private int yearsExperience;
-    private List<String> expertise;
+//    private List<String> expertise;
     private String bio;
     private String motivation;
     private String availability;

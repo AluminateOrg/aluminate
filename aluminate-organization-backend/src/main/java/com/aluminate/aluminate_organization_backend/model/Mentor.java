@@ -33,18 +33,17 @@ public class Mentor {
     private String motivation;
     private boolean isApproved;
     private String availability;
+    private String status;
 
     /** Mentor languages, each mentor can have multiple languages be entered from a form field */
     @ElementCollection
     @CollectionTable(name = "mentor_languages", joinColumns = @JoinColumn(name = "mentor_id"))
     @Column(name = "language")
-    @Builder.Default
     private Set<String> languages = new HashSet<>();
 
     @ElementCollection
     @CollectionTable(name = "mentor_skills", joinColumns = @JoinColumn(name = "mentor_id"))
     @Column(name = "skill")
-    @Builder.Default
     private Set<String> skills = new HashSet<>();
 
     private String preferredMenteeLevel;
@@ -60,11 +59,7 @@ public class Mentor {
     )
     private Set<MentorProgram> programs = new HashSet<>();
 
-    @PreRemove
-    private void preRemove() {
-        this.languages.clear();
-        this.skills.clear();
-    }
+
 
     /** Utility methods for maintaining the relationship */
     public void addProgram(MentorProgram program) {
