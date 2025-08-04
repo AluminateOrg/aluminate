@@ -10,7 +10,7 @@ public class AnnouncementRequest {
     private String title;
     private String message;
     private String recipients;
-    private List<String> selectedGroups;
+    private List<Integer> selectedGroups;
     private String priority;
     private boolean sendEmail;
     private boolean sendPush;
