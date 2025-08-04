@@ -4,10 +4,12 @@ import lombok.Getter;
 
 @Getter
 public enum CampaignType {
-    FUNDRAISING("Fundraising Campaign"),
-    EMERGENCY("Emergency Relief"),
-    INFRASTRUCTURE("Infrastructure Development"),
-    OTHER("Other Campaign");
+    FUNDRAISING("Fundraising"),
+    EMERGENCY("Emergency"),
+    GENERAL("General"),
+    SCHOLARSHIP("Scholarship"),
+    INFRASTRUCTURE("Infrastructure"),
+    OTHER("Other");
 
     private final String displayName;
 
