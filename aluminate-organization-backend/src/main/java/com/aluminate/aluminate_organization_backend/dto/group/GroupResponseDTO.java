@@ -19,5 +19,6 @@ public class GroupResponseDTO {
     private boolean isActive;
     private boolean isDeleted;
     private LocalDateTime deletedAt;
+    private boolean requiredApproval;
     private GroupCategory category;
 }

@@ -30,6 +30,7 @@ public class GroupsService implements IGroupsService {
                 .description(group.getDescription())
                 .category(group.getCategory())
                 .maxMembers(group.getMaxMembers())
+                .requiredApproval(group.isRequiredApproval())
                 .build();
         try {
             return groupsRepository.save(newGroup);
@@ -58,6 +59,7 @@ public class GroupsService implements IGroupsService {
                 .isDeleted(group.isDeleted())
                 .deletedAt(group.getDeletedAt())
                 .category(group.getCategory())
+                .requiredApproval(group.isRequiredApproval())
                 .build();
     }
 

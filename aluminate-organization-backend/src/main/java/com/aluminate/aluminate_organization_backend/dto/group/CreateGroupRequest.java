@@ -9,4 +9,5 @@ public class CreateGroupRequest {
     private String description;
     private int maxMembers;
     private GroupCategory category;
+    private boolean requiredApproval;
 }
