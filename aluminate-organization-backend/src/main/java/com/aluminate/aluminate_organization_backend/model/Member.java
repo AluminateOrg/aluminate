@@ -2,8 +2,13 @@ package com.aluminate.aluminate_organization_backend.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Getter
@@ -14,7 +19,7 @@ import java.util.Set;
 @Builder
 @EqualsAndHashCode(of = {"id"})
 
-public class Member {
+public class Member extends GlobalUser implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -35,6 +40,11 @@ public class Member {
     private int batch;
     @Builder.Default
     private boolean isActive = true;
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority("ROLE_MEMBER"));
+    }
 
     /** One member can be a member of multiple groups */
     @OneToMany(mappedBy = "member")

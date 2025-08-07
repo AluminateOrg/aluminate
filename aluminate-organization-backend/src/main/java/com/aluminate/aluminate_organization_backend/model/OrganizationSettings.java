@@ -27,4 +27,6 @@ public class OrganizationSettings {
     private String phoneNumber;
     private String address;
     private String logoUrl;
+
+
 }
