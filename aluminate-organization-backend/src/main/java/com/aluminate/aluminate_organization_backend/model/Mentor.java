@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -14,7 +15,6 @@ import java.util.Set;
 @Entity
 @Builder
 @EqualsAndHashCode(of = {"id"})
-
 public class Mentor {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,13 +24,14 @@ public class Mentor {
     @JoinColumn(name = "member_id", referencedColumnName = "id")
     private Member member;
 
-    private String availability;
+
     private int yearsOfExperience;
     private BigDecimal hourlyRate;
     private String bio;
     private String linkedInUrl;
     private String portfolioUrl;
     private String motivation;
+    private boolean isApproved;
 
     /** Mentor languages, each mentor can have multiple languages be entered from a form field */
     @ElementCollection
@@ -38,10 +39,16 @@ public class Mentor {
     @Column(name = "language")
     private Set<String> languages = new HashSet<>();
 
+    @ElementCollection
+    @CollectionTable(name = "mentor_skills", joinColumns = @JoinColumn(name = "mentor_id"))
+    @Column(name = "skill")
+    private Set<String> skills = new HashSet<>();
+
     private String preferredMenteeLevel;
     private int maxMentees;
     private Double rating;
     private int sessionCount;
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     @OneToMany(
             mappedBy = "mentor",

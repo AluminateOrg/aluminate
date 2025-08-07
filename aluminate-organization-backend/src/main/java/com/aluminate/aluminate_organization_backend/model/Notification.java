@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -30,7 +31,7 @@ public class Notification {
 
     private String title;
     private String message;
-    private LocalDate date;
+    private LocalDateTime date;
     private boolean isRead;
 }
 

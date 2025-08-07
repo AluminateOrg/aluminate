@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -20,10 +21,37 @@ public class AnnouncementController {
 
     @PostMapping("/multicast-for-all-emails")
     public ResponseEntity<Map<String, Object>> sendEmailAnnouncement(@RequestBody AnnouncementRequest request) {
-        int sendCount = announcementService.sendEmailAnnouncement(request);
+        int sendCount = 0;
         Map<String, Object> response = new HashMap<>();
-        response.put("message", "Email announcement sent successfully");
-        response.put("sendCount", sendCount);
-        return ResponseEntity.ok(response);
+        if ("all".equals(request.getRecipients())){
+            if (request.isSendEmail()) {
+                sendCount = announcementService.sendEmailAnnouncement(request);
+                response.put("message", "Email announcement sent successfully");
+                response.put("sendCount", sendCount);
+            }
+            if (request.isSendPush()) {
+                sendCount = announcementService.sendNotificationToAllMembers(request);
+                response.put("message", "Push notification sent successfully");
+                response.put("sendCount", sendCount);
+            }
+            return ResponseEntity.ok(response);
+        } else if ("groups".equals(request.getRecipients())) {
+            if (request.isSendEmail()) {
+                sendCount = announcementService.sendEmailToSelectedGroups(request);
+                response.put("message", "Email announcement sent successfully");
+                response.put("sendCount", sendCount);
+            }
+
+            if (request.isSendPush()) {
+                sendCount = announcementService.sendNotificationToSelectedGroups(request);
+                response.put("message", "Push notification sent successfully");
+                response.put("sendCount", sendCount);
+            }
+
+            return ResponseEntity.ok(response);
+        } else {
+            response.put("message", "Invalid recipients");
+            return ResponseEntity.badRequest().body(response);
+        }
     }
 }
