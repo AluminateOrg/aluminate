@@ -41,6 +41,9 @@ public class Member extends GlobalUser implements UserDetails {
     @Builder.Default
     private boolean isActive = true;
 
+    @Builder.Default
+    private boolean isMembershipPaid = false;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_MEMBER"));
@@ -61,6 +64,18 @@ public class Member extends GlobalUser implements UserDetails {
     /** One member can receive multiple notifications */
     @OneToMany(mappedBy = "member")
     private Set<Notification> notifications = new HashSet<>();
+
+    @ManyToOne
+    @JoinColumn(
+            name = "organization_id",
+            referencedColumnName = "id",
+            foreignKey = @ForeignKey(
+                    name = "fk_member_organization",
+                    foreignKeyDefinition = "FOREIGN KEY (organization_id) REFERENCES organization(id) ON UPDATE CASCADE ON DELETE CASCADE"
+            )
+    )
+    private Organization organization;
+
 
 
     /** Utility method to add donation */

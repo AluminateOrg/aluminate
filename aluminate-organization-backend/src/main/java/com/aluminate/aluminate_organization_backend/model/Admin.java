@@ -22,19 +22,13 @@ public class Admin extends GlobalUser implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private String name;
     private String email;
-    private String nic;
     private String phone;
     private String password;
 
     @Builder.Default
     private boolean emailVerified = false;
-
-    @Column(nullable = false)
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
 
     @OneToOne(mappedBy = "admin", cascade = CascadeType.ALL, orphanRemoval = true)
     private Organization organization;

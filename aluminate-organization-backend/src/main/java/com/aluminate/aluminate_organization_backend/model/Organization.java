@@ -6,6 +6,8 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -21,15 +23,6 @@ public class Organization {
 
     @Column(nullable = false)
     private String organizationName;
-
-
-
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
-
-    private LocalDate nextRenewalDate;
-    private String subdomain;
-    private String portalUrl;
     private int maxMemberCount;
     private int currentMemberCount;
 
@@ -41,6 +34,9 @@ public class Organization {
 
     @Builder.Default
     private boolean isMembershipFree = true;
+
+    @OneToMany(mappedBy = "organization", cascade = CascadeType.ALL)
+    private Set<Member> members = new HashSet<>();
 
     @OneToOne
     @JoinColumn(

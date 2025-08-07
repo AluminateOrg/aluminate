@@ -2,8 +2,9 @@ package com.aluminate.aluminate_organization_backend.config;
 
 import com.aluminate.aluminate_organization_backend.config.util.Jwt;
 
-import com.aluminate.aluminate_organization_backend.model.OrganizationSettings;
+import com.aluminate.aluminate_organization_backend.model.*;
 import com.aluminate.aluminate_organization_backend.repository.OrganizationSettingsRepository;
+import com.aluminate.aluminate_organization_backend.service.CustomUserDetailsService;
 import com.aluminate.aluminate_organization_backend.service.csrf.CsrfTokenService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
@@ -31,6 +32,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final Jwt jwtUtil;
     private final CsrfTokenService csrfTokenService;
     private final OrganizationSettingsRepository organizationSettingsRepository;
+    private final CustomUserDetailsService customUserDetailsService;
 
 
 
@@ -39,13 +41,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     public JwtAuthenticationFilter(Jwt jwtUtil,
                                    CsrfTokenService csrfTokenService,
-                                   OrganizationSettingsRepository organizationSettingsRepository
+                                   OrganizationSettingsRepository organizationSettingsRepository,
+                                      CustomUserDetailsService customUserDetailsService
 
 
     ) {
         this.jwtUtil = jwtUtil;
         this.csrfTokenService = csrfTokenService;
         this.organizationSettingsRepository = organizationSettingsRepository;
+        this.customUserDetailsService = customUserDetailsService;
 
 
     }
@@ -98,8 +102,69 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             Claims claims = jwtUtil.extractAllClaims(jwt);
 
-            String adminEmail = claims.get("adminEmail", String.class);
-            //check if adminEmail is null
+            String email = claims.get("email", String.class);
+            //check if email is null
+            if (email == null) {
+                unauthorized(response, "Invalid token claims");
+                logger.error("Invalid token claims: email is null");
+                return;
+            }
+            //check if user is a member or admin
+            UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
+            if (userDetails == null) {
+                unauthorized(response, "Invalid user email");
+                logger.error("Invalid user email: " + email);
+                return;
+            }
+            //get role
+            if((userDetails instanceof Admin)){
+                Admin admin = (Admin)  userDetails;
+                //get organization
+                Organization organization = (Organization) admin.getOrganization();
+                //check if organization is null or status is not ACTIVE
+                if (organization == null || organization.getStatus() != Status.ACTIVE) {
+                    unauthorized(response, "Organization is not active or does not exist");
+                    logger.error("Organization is not active or does not exist for admin: " + admin.getEmail());
+                    return;
+                }
+                UsernamePasswordAuthenticationToken auth =
+                        new UsernamePasswordAuthenticationToken(admin, null, admin.getAuthorities());
+
+                SecurityContextHolder.getContext().setAuthentication(auth);
+
+                filterChain.doFilter(request, response);
+                logger.info("Successfully passed JWT authentication for admin: " + admin.getEmail());
+            }
+            else if((userDetails instanceof Member)){
+                //check whether the membership-fee is free or not
+                Member member = (Member) userDetails;
+                //get org
+                Organization organization = (Organization) member.getOrganization();
+
+                //check if organization is null or status is not ACTIVE
+                if (organization == null || organization.getStatus() != Status.ACTIVE) {
+                    unauthorized(response, "Organization is not active or does not exist");
+                    logger.error("Organization is not active or does not exist for member: " + member.getEmail());
+                    return;
+                }
+
+                if (requiresMembershipFee(path) && !organization.isMembershipFree()) {
+                    //reject
+                    unauthorized(response, "Membership fee required for this route");
+                    logger.error("Membership fee is not paid");
+                    return;
+                }else{
+                    UsernamePasswordAuthenticationToken auth =
+                            new UsernamePasswordAuthenticationToken(member, null, member.getAuthorities());
+
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+
+                    filterChain.doFilter(request, response);
+                    logger.info("Successfully passed JWT authentication for member: " + member.getEmail());
+                }
+            }
+
+
 
 
 
@@ -123,12 +188,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private boolean requiresMembershipFee(String uri) {
         // Customize which routes require active package
         // Example: only require active paid membership on sensitive routes
-        if(uri.startsWith(apiPrefix + "/member/")) {
-            //get organization settings
 
+         return uri.startsWith(apiPrefix + "/member/");
 
-        }
-        return true;
     }
 
     private void unauthorized(HttpServletResponse response, String message) throws IOException {

@@ -1,6 +1,7 @@
 package com.aluminate.aluminate_organization_backend.service.auth;
 
 import com.aluminate.aluminate_organization_backend.config.util.Jwt;
+import com.aluminate.aluminate_organization_backend.dto.MemberDTO;
 import com.aluminate.aluminate_organization_backend.dto.login.LoginResponse;
 import com.aluminate.aluminate_organization_backend.model.Member;
 import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class AuthService {
@@ -25,9 +27,42 @@ public class AuthService {
 
     public LoginResponse login(String email, String password,String role) {
         //check if role is 'member' or 'admin'
+        if (!role.equals("member") && !role.equals("admin")) {
+            throw new RuntimeException("Invalid role");
+        }
+        Optional<Member> member = memberRepository.findByEmail(email);
+        if (member.isEmpty()) {
+            //call global backend to check if admin exists
+        }
+
+        if (!passwordEncoder.matches(password, member.getPassword())) {
+            throw new RuntimeException("Invalid password");
+        }
+
+        //memberDTO
+        MemberDTO memberDTO = new MemberDTO(
+                member.getId(),
+                member.getName(),
+                member.getNic(),
+                member.getPhone(),
+                member.getEmail(),
+                member.getRegNo(),
+                member.getAddress(),
+                member.getPhotoUrl(),
+                member.getDegree(),
+                member.getCompany(),
+                member.getPosition(),
+                member.getLinkedinUrl(),
+                member.getGithubUrl(),
+                member.getWebsiteUrl(),
+                member.getBatch()
+        );
 
 
-
+        return new LoginResponse(
+                jwt.generateToken(,member),
+                memberDTO
+        );
     }
 
 }
