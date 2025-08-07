@@ -1,6 +1,7 @@
 package com.aluminate.aluminate_organization_backend.service.members;
 
 import com.aluminate.aluminate_organization_backend.dto.MemberRequestDTO;
+import com.aluminate.aluminate_organization_backend.exception.ResourceNotFoundException;
 import com.aluminate.aluminate_organization_backend.model.Groups;
 import com.aluminate.aluminate_organization_backend.model.Member;
 import com.aluminate.aluminate_organization_backend.model.MemberGroup;
@@ -42,7 +43,7 @@ public class MemberServiceImpl implements IMemberService {
                 .build();
 
         Member savedMember = memberRepository.save(member);
-        //send welcome email
+        // send welcome email
         emailService.sendEmail(dto.getEmail(), dto.getName(), dto.getNic());
 
         // Link member to groups
@@ -66,4 +67,14 @@ public class MemberServiceImpl implements IMemberService {
     public long getMemberCount() {
         return memberRepository.count();
     }
+
+    @Override
+    public void deactivateMember(Long id) {
+        Member member = memberRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Member not found with ID: " + id));
+
+        member.setIsActive(false);
+        memberRepository.save(member);
+    }
+
 }
