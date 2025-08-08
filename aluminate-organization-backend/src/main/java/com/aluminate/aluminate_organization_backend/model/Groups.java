@@ -47,6 +47,9 @@ public class Groups {
 
     private LocalDateTime deletedAt; // timestamp when the group was deleted, null if not deleted
 
+    @Builder.Default
+    private boolean requiredApproval = false; // true if the group requires approval to join, false if anyone can join
+
     /** To Access group members via MemberGroup entity */
     @OneToMany(mappedBy = "group")
     private Set<MemberGroup> memberGroups = new HashSet<>();
