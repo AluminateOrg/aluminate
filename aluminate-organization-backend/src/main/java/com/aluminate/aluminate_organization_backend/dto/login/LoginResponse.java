@@ -11,6 +11,6 @@ import lombok.*;
 @Setter
 public class LoginResponse {
     private String token;
-    private MemberDTO member;
+    private UserDTO user;
 
 }

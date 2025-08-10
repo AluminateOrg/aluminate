@@ -26,4 +26,5 @@ public class CustomUserDetailsService implements UserDetailsService {
                         map( member -> member))
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
+
 }
