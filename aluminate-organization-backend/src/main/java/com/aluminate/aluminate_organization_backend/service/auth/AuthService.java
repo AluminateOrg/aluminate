@@ -1,6 +1,7 @@
 package com.aluminate.aluminate_organization_backend.service.auth;
 
 import com.aluminate.aluminate_organization_backend.config.util.Jwt;
+import com.aluminate.aluminate_organization_backend.dto.MemberDTO;
 import com.aluminate.aluminate_organization_backend.dto.login.LoginResponse;
 import com.aluminate.aluminate_organization_backend.model.Member;
 import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
@@ -33,9 +34,27 @@ public class AuthService {
 
         //return token & member
 
+        MemberDTO memberDTO = new MemberDTO(
+                member.getId(),
+                member.getName(),
+                member.getNic(),
+                member.getPhone(),
+                member.getEmail(),
+                member.getRegNo(),
+                member.getAddress(),
+                member.getPhotoUrl(),
+                member.getDegree(),
+                member.getCompany(),
+                member.getPosition(),
+                member.getLinkedinUrl(),
+                member.getGithubUrl(),
+                member.getWebsiteUrl(),
+                member.getBatch()
+        );
+
         return new LoginResponse(
                 jwt.generateToken(email),
-                member
+                memberDTO
         );
     }
 

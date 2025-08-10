@@ -1,6 +1,7 @@
 package com.aluminate.aluminate_organization_backend.service.members;
 
 import com.aluminate.aluminate_organization_backend.dto.MemberRequestDTO;
+import com.aluminate.aluminate_organization_backend.dto.group.GroupMembershipStatusDTO;
 import com.aluminate.aluminate_organization_backend.exception.ResourceNotFoundException;
 import com.aluminate.aluminate_organization_backend.model.Groups;
 import com.aluminate.aluminate_organization_backend.model.Member;
@@ -13,6 +14,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -67,6 +71,30 @@ public class MemberServiceImpl implements IMemberService {
     public long getMemberCount() {
         return memberRepository.count();
     }
+
+    @Override
+    public List<GroupMembershipStatusDTO> getMemberGroupMembershipStatuses(Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("Member not found"));
+
+        List<MemberGroup> memberGroups = memberGroupRepository.findByMember(member);
+
+        return memberGroups.stream()
+                .map(memberGroup -> {
+                    GroupMembershipStatusDTO statusDTO = new GroupMembershipStatusDTO();
+                    statusDTO.setGroupId(memberGroup.getGroup().getId());
+
+                    if (memberGroup.getRequestStatus() == null) {
+                        statusDTO.setStatus("not_member");
+                    } else {
+                        statusDTO.setStatus(memberGroup.getRequestStatus().toString().toLowerCase());
+                    }
+
+                    return statusDTO;
+                })
+                .collect(Collectors.toList());
+    }
+
 
     @Override
     public void deactivateMember(Long id) {

@@ -1,5 +1,6 @@
 package com.aluminate.aluminate_organization_backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 

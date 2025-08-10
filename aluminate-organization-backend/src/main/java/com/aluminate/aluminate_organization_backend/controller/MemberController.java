@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.aluminate.aluminate_organization_backend.dto.MemberRequestDTO;
 import com.aluminate.aluminate_organization_backend.dto.MemberResponseDTO;
+import com.aluminate.aluminate_organization_backend.dto.group.GroupMembershipStatusDTO;
 import com.aluminate.aluminate_organization_backend.dto.response.ApiResponse;
 import com.aluminate.aluminate_organization_backend.exception.ResourceNotFoundException;
 import com.aluminate.aluminate_organization_backend.model.Member;
@@ -70,6 +71,20 @@ public class MemberController {
         } catch (Exception e) {
             return ResponseEntity.status(INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse("Failed to retrieve members.", null));
+        }
+    }
+
+    @GetMapping("/{memberId}/groups/membership-status")
+    public ResponseEntity<ApiResponse> getMemberGroupMembershipStatuses(@PathVariable Long memberId) {
+        try {
+            List<GroupMembershipStatusDTO> statuses = memberService.getMemberGroupMembershipStatuses(memberId);
+            return ResponseEntity.ok(new ApiResponse("Membership statuses retrieved successfully!", statuses));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(NOT_FOUND)
+                    .body(new ApiResponse(e.getMessage(), null));
+        } catch (Exception e) {
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse("Failed to retrieve membership statuses", null));
         }
     }
 
