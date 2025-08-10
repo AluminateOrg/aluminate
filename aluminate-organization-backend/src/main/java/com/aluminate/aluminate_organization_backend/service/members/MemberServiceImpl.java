@@ -95,7 +95,6 @@ public class MemberServiceImpl implements IMemberService {
                 .collect(Collectors.toList());
     }
 
-
     @Override
     public void deactivateMember(Long id) {
         Member member = memberRepository.findById(id)
