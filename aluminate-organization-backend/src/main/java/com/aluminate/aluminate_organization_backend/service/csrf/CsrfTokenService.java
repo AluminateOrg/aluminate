@@ -20,10 +20,12 @@ public class CsrfTokenService {
 
     public CsrfTokenService(StringRedisTemplate redisTemplate) {
         this.redisTemplate = redisTemplate;
+        logger.info("CsrfTokenService created");
 
     }
 
     public String generateAndStoreToken(String sessionId) {
+        logger.info("Generating CSRF token for session");
         byte[] bytes = new byte[32];
         secureRandom.nextBytes(bytes);
         String csrfToken = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);

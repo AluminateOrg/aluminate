@@ -11,10 +11,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 
 
-@FeignClient(name = "global-backend", url = "${global.backend.base-url}${api.prefix}")
+@FeignClient(name = "global-backend", url = "${global.backend.base-url}${api.prefix.global}")
 public interface GlobalBackendAuthClient {
 
-    @PostMapping("/verify-admin")
+    @PostMapping("/auth/verify-admin")
     ResponseEntity<GlobalAuthResponse> verifyAdminCredentials(
-            @RequestBody GlobalAuthRequest request);
+            @RequestBody String encryptedRequest);
 }

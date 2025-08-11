@@ -3,6 +3,7 @@ package com.aluminate.aluminate_organization_backend.service.auth;
 import com.aluminate.aluminate_organization_backend.config.GlobalAuth.GlobalBackendAuthClient;
 import com.aluminate.aluminate_organization_backend.config.exception.InvalidEmailException;
 import com.aluminate.aluminate_organization_backend.config.util.Jwt;
+import com.aluminate.aluminate_organization_backend.config.util.RSAEncryptionUtil;
 import com.aluminate.aluminate_organization_backend.dto.MemberDTO;
 import com.aluminate.aluminate_organization_backend.dto.login.*;
 import com.aluminate.aluminate_organization_backend.model.*;
@@ -10,16 +11,28 @@ import com.aluminate.aluminate_organization_backend.repository.AdminRepository;
 import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
 import com.aluminate.aluminate_organization_backend.repository.OrganizationRepository;
 import com.aluminate.aluminate_organization_backend.service.CustomUserDetailsService;
+import com.aluminate.aluminate_organization_backend.service.csrf.CsrfTokenService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -31,14 +44,33 @@ public class AuthService {
     private final CustomUserDetailsService customUserDetailsService;
     private final GlobalBackendAuthClient globalBackendAuthClient;
     private final Logger logger = LoggerFactory.getLogger(AuthService.class);
+    private final CsrfTokenService csrfTokenService;
+
+
+    @Value("${encryption.organization.private-key}")
+    private String orgPrivateKeyENV;
+
+    @Value("${encryption.global.public-key}")
+    private String globalPublicKeyENV;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private PrivateKey orgPrivateKey;
+    private PublicKey globalPublicKey;
+
+    @PostConstruct
+    public void initKeys() throws Exception {
+        this.orgPrivateKey = RSAEncryptionUtil.privateKeyFromPem(orgPrivateKeyENV);
+        this.globalPublicKey = RSAEncryptionUtil.publicKeyFromPem(globalPublicKeyENV);
+    }
 
     public AuthService(MemberRepository memberRepository,
                        PasswordEncoder passwordEncoder,
                        Jwt jwt,
                        CustomUserDetailsService customUserDetailsService,
                        GlobalBackendAuthClient globalBackendAuthClient,
-                          AdminRepository adminRepository,
-                          OrganizationRepository organizationRepository
+                       AdminRepository adminRepository,
+                       OrganizationRepository organizationRepository,
+                          CsrfTokenService csrfTokenService
     ) {
         this.memberRepository = memberRepository;
         this.passwordEncoder = passwordEncoder;
@@ -47,6 +79,7 @@ public class AuthService {
         this.globalBackendAuthClient = globalBackendAuthClient;
         this.adminRepository = adminRepository;
         this.organizationRepository = organizationRepository;
+        this.csrfTokenService = csrfTokenService;
     }
 
     public LoginResponse login(String email, String password) {
@@ -92,13 +125,19 @@ public class AuthService {
                 adminDTO
         );
     }
-
-    private LoginResponse handleGlobalBackendLogin(String email, String password) {
+    @Transactional
+    protected LoginResponse handleGlobalBackendLogin(String email, String password) {
         logger.info("User not found locally, checking global backend for email: {}", email);
 
         try {
+            //encrypt the login request
+            String encryptedRequest = RSAEncryptionUtil.encrypt(
+                    objectMapper.writeValueAsString(new GlobalAuthRequest(email, password)),
+                    globalPublicKey
+            );
+
             ResponseEntity<GlobalAuthResponse> response = globalBackendAuthClient.verifyAdminCredentials(
-                    new GlobalAuthRequest(email, password)
+                    encryptedRequest
             );
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null && response.getBody().isSuccess()) {
@@ -117,12 +156,13 @@ public class AuthService {
                     throw new InvalidEmailException("No organization found in global backend for email: " + email);
                 }
 
+
                 // create a new record for the admin in the local database if needed
                 Admin admin = Admin.builder()
                         .name(adminGlobalDTO.getName())
                         .email(adminGlobalDTO.getEmail())
                         .phone(adminGlobalDTO.getPhone())
-                        .password(passwordEncoder.encode(adminGlobalDTO.getPassword())) // encode the password
+                        .password(adminGlobalDTO.getPassword())
                         .build();
 
 
@@ -157,8 +197,12 @@ public class AuthService {
                 );
 
             }
+            else{
+                logger.error("Global backend authentication failed for email: {}", email);
+            }
         } catch (Exception ex) {
-            logger.error("Global backend authentication failed for email: {}", email, ex);
+            logger.error("Global backend authentication failed- went to catch {}", email);
+            throw new RuntimeException("Global Server not reachable or error occurred while processing the request", ex);
         }
 
         throw new InvalidEmailException("Invalid credentials for email: " + email);
@@ -231,4 +275,39 @@ public class AuthService {
         claims.put("email", email);
         return claims;
     }
+
+
+    public void setAuthCookies(HttpServletResponse httpResponse, String token) {
+        String sessionId = UUID.randomUUID().toString();
+        String csrfToken = csrfTokenService.generateAndStoreToken(sessionId);
+
+        ResponseCookie jwtCookie = ResponseCookie.from("jwt", token)
+                .httpOnly(true)
+                .secure(false)
+                .sameSite("Strict")
+                .path("/")
+                .maxAge(Duration.ofDays(1))
+                .build();
+
+        ResponseCookie csrfCookie = ResponseCookie.from("csrf-token", csrfToken)
+                .httpOnly(false)
+                .secure(false)
+                .sameSite("Strict")
+                .path("/")
+                .maxAge(Duration.ofDays(1))
+                .build();
+
+        ResponseCookie sessionCookie = ResponseCookie.from("sessionId", sessionId)
+                .httpOnly(false)
+                .secure(false)
+                .sameSite("Strict")
+                .path("/")
+                .maxAge(Duration.ofDays(1))
+                .build();
+
+        httpResponse.addHeader("Set-Cookie", jwtCookie.toString());
+        httpResponse.addHeader("Set-Cookie", csrfCookie.toString());
+        httpResponse.addHeader("Set-Cookie", sessionCookie.toString());
+    }
+
 }

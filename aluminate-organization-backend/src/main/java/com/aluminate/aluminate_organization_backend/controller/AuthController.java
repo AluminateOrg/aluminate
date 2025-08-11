@@ -1,34 +1,77 @@
 package com.aluminate.aluminate_organization_backend.controller;
 
     import com.aluminate.aluminate_organization_backend.config.ResponseWrapper;
+    import com.aluminate.aluminate_organization_backend.config.util.RSAEncryptionUtil;
+    import com.aluminate.aluminate_organization_backend.dto.login.EncryptedLoginRequest;
     import com.aluminate.aluminate_organization_backend.dto.login.LoginRequest;
     import com.aluminate.aluminate_organization_backend.dto.login.LoginResponse;
     import com.aluminate.aluminate_organization_backend.service.auth.AuthService;
+    import com.fasterxml.jackson.databind.ObjectMapper;
+    import jakarta.annotation.PostConstruct;
+    import jakarta.servlet.http.HttpServletResponse;
     import jakarta.validation.Valid;
     import org.slf4j.Logger;
     import org.slf4j.LoggerFactory;
+    import org.springframework.beans.factory.annotation.Value;
     import org.springframework.http.ResponseEntity;
+    import org.springframework.transaction.annotation.Transactional;
     import org.springframework.web.bind.annotation.PostMapping;
     import org.springframework.web.bind.annotation.RequestBody;
     import org.springframework.web.bind.annotation.RequestMapping;
     import org.springframework.web.bind.annotation.RestController;
 
+    import java.security.PrivateKey;
 
-    @RestController
+
+@RestController
     @RequestMapping("${api.prefix}/auth")
     public class AuthController {
 
         private final AuthService authService;
         private final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
+        @Value("${encryption.organization.private-key}")
+        private String organizationPrivateKeyENV;
+        private final ObjectMapper objectMapper = new ObjectMapper();
+
+        private PrivateKey organizationPrivateKey;
+
+        @PostConstruct
+        public void initKeys() throws Exception {
+            this.organizationPrivateKey = RSAEncryptionUtil.privateKeyFromPem(organizationPrivateKeyENV);
+        }
+
+
         public AuthController(AuthService authService) {
             this.authService = authService;
         }
 
         @PostMapping("/login")
-        public ResponseEntity<ResponseWrapper<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
+
+        public ResponseEntity<ResponseWrapper<LoginResponse>> login(@Valid @RequestBody EncryptedLoginRequest encryptedRequest, HttpServletResponse httpResponse) {
             try{
+                logger.info("Login attempting...");
+                logger.info("encryptedRequest: " + encryptedRequest);
+
+                //decrypt the request
+                String decrypted = RSAEncryptionUtil.decrypt(
+                        encryptedRequest.getPayload(),
+                        organizationPrivateKey
+                );
+                logger.info("decrypted: " + decrypted);
+                LoginRequest request = objectMapper.readValue(
+                        decrypted,
+                        LoginRequest.class
+                );
+
+
                 LoginResponse response = authService.login(request.getEmail(), request.getPassword());
+                //set cookies- jwt,csrf,session
+                authService.setAuthCookies(httpResponse, response.getToken());
+                logger.info("Login successful-> sending cookies");
+
+                //set token to null
+                response.setToken(null);
                 ResponseWrapper<LoginResponse> body = new ResponseWrapper<>(true, "Login successful", response);
                 return ResponseEntity.ok(body);
             }catch (Exception e){
