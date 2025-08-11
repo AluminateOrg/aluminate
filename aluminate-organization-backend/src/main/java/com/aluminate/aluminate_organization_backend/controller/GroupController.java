@@ -1,6 +1,8 @@
 package com.aluminate.aluminate_organization_backend.controller;
 
+import com.aluminate.aluminate_organization_backend.dto.group.GroupJoinRequest;
 import com.aluminate.aluminate_organization_backend.dto.group.GroupResponseDTO;
+import com.aluminate.aluminate_organization_backend.dto.group.PendingRequestDTO;
 import com.aluminate.aluminate_organization_backend.model.Groups;
 import com.aluminate.aluminate_organization_backend.dto.group.CreateGroupRequest;
 import com.aluminate.aluminate_organization_backend.dto.response.ApiResponse;
@@ -87,6 +89,91 @@ public class GroupController {
         } catch (Exception e) {
             return ResponseEntity.status(INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse(e.getMessage(), null));
+        }
+    }
+
+    @PostMapping("/join")
+    public ResponseEntity<ApiResponse> joinGroup(@RequestBody GroupJoinRequest request) {
+        try {
+            GroupResponseDTO result = groupsService.joinGroup(request);
+            return ResponseEntity.ok(new ApiResponse("Join request processed successfully!", result));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(NOT_FOUND)
+                    .body(new ApiResponse(e.getMessage(), null));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(BAD_REQUEST)
+                    .body(new ApiResponse(e.getMessage(), null));
+        } catch (Exception e) {
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse("Failed to process join request", null));
+        }
+    }
+
+    @PutMapping("/{groupId}/approve/{memberId}")
+    public ResponseEntity<ApiResponse> approveJoinRequest(
+            @PathVariable Long groupId,
+            @PathVariable Long memberId) {
+        try {
+            GroupResponseDTO result = groupsService.approveJoinRequest(groupId, memberId);
+            return ResponseEntity.ok(new ApiResponse("Join request approved successfully!", result));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(NOT_FOUND)
+                    .body(new ApiResponse(e.getMessage(), null));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(BAD_REQUEST)
+                    .body(new ApiResponse(e.getMessage(), null));
+        } catch (Exception e) {
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse("Failed to approve join request", null));
+        }
+    }
+
+    @PutMapping("/{groupId}/reject/{memberId}")
+    public ResponseEntity<ApiResponse> rejectJoinRequest(
+            @PathVariable Long groupId,
+            @PathVariable Long memberId) {
+        try {
+            GroupResponseDTO result = groupsService.rejectJoinRequest(groupId, memberId);
+            return ResponseEntity.ok(new ApiResponse("Join request rejected successfully!", result));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(NOT_FOUND)
+                    .body(new ApiResponse(e.getMessage(), null));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(BAD_REQUEST)
+                    .body(new ApiResponse(e.getMessage(), null));
+        } catch (Exception e) {
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse("Failed to reject join request", null));
+        }
+    }
+
+    @DeleteMapping("/{groupId}/leave/{memberId}")
+    public ResponseEntity<ApiResponse> leaveGroup(
+            @PathVariable Long groupId,
+            @PathVariable Long memberId) {
+        try {
+            GroupResponseDTO result = groupsService.leaveGroup(groupId, memberId);
+            return ResponseEntity.ok(new ApiResponse("Left group successfully!", result));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(NOT_FOUND)
+                    .body(new ApiResponse(e.getMessage(), null));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(BAD_REQUEST)
+                    .body(new ApiResponse(e.getMessage(), null));
+        } catch (Exception e) {
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse("Failed to leave group", null));
+        }
+    }
+
+    @GetMapping("/get/pending-requests")
+    public ResponseEntity<ApiResponse> getPendingRequests() {
+        try {
+            List<PendingRequestDTO> pendingRequests = groupsService.getPendingRequests();
+            return ResponseEntity.ok(new ApiResponse("Pending requests retrieved successfully!", pendingRequests));
+        } catch (Exception e) {
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse("Failed to retrieve pending requests", null));
         }
     }
 
