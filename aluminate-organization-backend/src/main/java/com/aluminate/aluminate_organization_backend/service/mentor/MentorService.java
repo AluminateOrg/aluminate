@@ -1,27 +1,38 @@
 package com.aluminate.aluminate_organization_backend.service.mentor;
 
-import com.aluminate.aluminate_organization_backend.dto.mentor.MentorApplicationDTO;
-import com.aluminate.aluminate_organization_backend.dto.mentor.MentorRequestDTO;
-import com.aluminate.aluminate_organization_backend.dto.mentor.MentorResponseDTO;
+import com.aluminate.aluminate_organization_backend.dto.mentor.*;
 import com.aluminate.aluminate_organization_backend.model.Member;
 import com.aluminate.aluminate_organization_backend.model.Mentor;
+import com.aluminate.aluminate_organization_backend.model.MentorProgram;
 import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
+import com.aluminate.aluminate_organization_backend.repository.MentorProgramRepository;
 import com.aluminate.aluminate_organization_backend.repository.MentorRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 public class MentorService {
 
-    @Autowired
-    private MentorRepository mentorRepository;
-    @Autowired
-    private MemberRepository memberRepository;
+
+    private final MentorRepository mentorRepository;
+    private final MemberRepository memberRepository;
+    private final MentorProgramRepository mentorProgramRepository;
+
+    public MentorService(MentorRepository mentorRepository, MemberRepository memberRepository, MentorProgramRepository mentorProgramRepository) {
+        this.mentorRepository = mentorRepository;
+        this.memberRepository = memberRepository;
+        this.mentorProgramRepository = mentorProgramRepository;
+    }
 
     // Apply as a mentor
+    @Transactional
     public MentorResponseDTO applyAsMentor(MentorRequestDTO request) {
         Member member = memberRepository.findById(request.getMemberId())
                 .orElseThrow(() -> new RuntimeException("Member not found"));
@@ -30,10 +41,10 @@ public class MentorService {
 
         Mentor mentor =  Mentor.builder()
                 .member(member)
-                .yearsOfExperience(request.getYearsOfExperience())
+                .yearsOfExperience(request.getYearsExperience())
                 .hourlyRate(request.getHourlyRate())
                 .bio(request.getBio())
-                .linkedInUrl(request.getLinkedInUrl())
+                .linkedInUrl(request.getLinkedinUrl())
                 .portfolioUrl(request.getPortfolioUrl())
                 .motivation(request.getMotivation())
                 .languages(request.getLanguages())
@@ -43,6 +54,9 @@ public class MentorService {
                 .isApproved(false)
                 .rating(0.0)
                 .sessionCount(0)
+                .createdAt(LocalDateTime.now())
+                .availability(request.getAvailability())
+                .status("PENDING")
                 .build();
 
         Mentor saved = mentorRepository.save(mentor);
@@ -68,6 +82,7 @@ public class MentorService {
     }
 
     // fetch all mentor applications
+    @Transactional(readOnly = true)
     public List<MentorResponseDTO> getAllMentorApplications() {
         return mentorRepository.findAll().stream()
                 .map(mentor -> MentorResponseDTO.builder()
@@ -90,6 +105,7 @@ public class MentorService {
     }
 
     // get all unapproved mentors
+    @Transactional
     public List<MentorApplicationDTO> getAllUnapprovedMentors() {
         List<Mentor> unapprovedMentors = mentorRepository.findAll().stream()
                 .filter(mentor -> !mentor.isApproved())
@@ -99,6 +115,7 @@ public class MentorService {
     }
 
     // Approve a mentor application
+    @Transactional
     public boolean approveMentorApplication(Long id) {
         Mentor mentor = mentorRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Mentor application not found"));
@@ -110,15 +127,22 @@ public class MentorService {
     }
 
     //delete a mentor application
+    @Transactional
     public boolean rejectMentorApplication(Long applicationId) {
         Mentor mentor = mentorRepository.findById(applicationId)
                 .orElseThrow(() -> new RuntimeException("Mentor application not found"));
         if (mentor.isApproved()) throw new RuntimeException("Mentor application is already approved");
+
+        mentor.getLanguages().clear();
+        mentor.getSkills().clear();
+        mentorRepository.saveAndFlush(mentor);
+
         mentorRepository.delete(mentor);
         return true;
     }
 
     //get all approved mentors
+    @Transactional(readOnly = true)
     public List<MentorApplicationDTO> getAllApprovedMentors() {
         List<Mentor> approvedMentors = mentorRepository.findAll().stream()
                 .filter(Mentor::isApproved)
@@ -148,11 +172,13 @@ public class MentorService {
             dto.setPreferredMenteeLevel(mentor.getPreferredMenteeLevel());
             dto.setMaxMentees(mentor.getMaxMentees());
             dto.setApproved(mentor.isApproved());
+            dto.setHourlyRate(mentor.getHourlyRate());
             return dto;
         }).toList();
     }
 
     //deactivate mentors
+    @Transactional
     public boolean deactivateMentor(Long id) {
         Mentor mentor = mentorRepository.findByMemberId(id)
                 .orElseThrow(() -> new RuntimeException("Mentor application not found"));
@@ -165,4 +191,107 @@ public class MentorService {
         return true;
     }
 
+    // request a session with a mentor
+    @Transactional
+    public boolean requestSessionWithMentor(SessionRequestDTO requestDTO) {
+        Mentor mentor = mentorRepository.findById(requestDTO.getMentorId())
+                .orElseThrow(() -> new RuntimeException("Mentor not found"));
+
+        Member member = null;
+        //create a set to hold members
+        Set<Member> participants = requestDTO.getUserId().stream()
+                .map(userId -> memberRepository.findById(userId)
+                        .orElseThrow(() -> new RuntimeException("Member not found")))
+                .collect(Collectors.toSet());
+
+
+        //save to the mentor program table
+        MentorProgram mentorProgram = MentorProgram.builder()
+                .mentor(mentor)
+                .participants(participants)
+                .createdAt(LocalDateTime.now())
+                .status("PENDING")
+                .build();
+
+        //save the mentor program
+
+//        return mentorProgramRepository.save(mentorProgram);
+        MentorProgram savedProgram = mentorProgramRepository.save(mentorProgram);
+
+        //update the mentor's session count
+        mentor.setSessionCount(mentor.getSessionCount() + 1);
+        mentorRepository.save(mentor);
+        return true;
+
+    }
+
+    //accept a session and update the session date, time and url
+    @Transactional
+    public boolean acceptSession(SessionRespondDTO sessionRespondDTO){
+        MentorProgram mentorProgram = mentorProgramRepository.findById(sessionRespondDTO.getId())
+                .orElseThrow(() -> new RuntimeException("Mentor program not found"));
+
+        mentorProgram.setProgramUrl(sessionRespondDTO.getProgramUrl());
+        mentorProgram.setStatus("ACCEPTED");
+        mentorProgram.setDate(LocalDate.now());
+        mentorProgram.setTime(LocalTime.now());
+        mentorProgramRepository.save(mentorProgram);
+
+        return true;
+    }
+
+    //reject a session
+    @Transactional
+    public boolean rejectSession(SessionRespondDTO sessionRespondDTO) {
+        MentorProgram mentorProgram = mentorProgramRepository.findById(sessionRespondDTO.getId())
+                .orElseThrow(() -> new RuntimeException("Mentor program not found"));
+
+        mentorProgram.setStatus("REJECTED");
+        mentorProgramRepository.save(mentorProgram);
+
+        return true;
+    }
+
+    //get all sessions by mentor
+    @Transactional(readOnly = true)
+    public List<MentorSessionDTO> getAllSessionsByMentor(Long mentorId) {
+        Mentor mentor = mentorRepository.findById(mentorId)
+                .orElseThrow(() -> new RuntimeException("Mentor not found"));
+
+        return mentor.getPrograms().stream()
+                .map(program -> MentorSessionDTO.builder()
+                        .id(program.getId())
+                        .programUrl(program.getProgramUrl())
+                        .date(program.getDate())
+                        .time(program.getTime())
+                        .status(program.getStatus())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<MentorSessionDTO> getAllSessionsByMember(Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new RuntimeException("Member not found"));
+        System.out.println("Fetching sessions for member: " + member.getId());
+        //mentor programs where the member is a participant
+        List<MentorProgram> mentorProgram = mentorProgramRepository.findAllByParticipantId(memberId);
+        System.out.println("mentorProgram: " + mentorProgram);
+        if (mentorProgram == null) {
+            throw new RuntimeException("No mentor programs found for member");
+        }
+        return mentorProgram.stream()
+                .map(program -> MentorSessionDTO.builder()
+                        .id(program.getId())
+                        .programUrl(program.getProgramUrl())
+                        .mentorName(program.getMentor().getMember().getName())
+                        .menteeName(member.getName())
+                        .status(program.getStatus())
+                        .date(program.getDate())
+                        .time(program.getTime())
+                        .sessionDuration("1 hour") // Placeholder, can be calculated based on program data
+                        .feedback("") // Placeholder, can be updated later
+                        .build())
+                .collect(Collectors.toList());
+    }
 }
