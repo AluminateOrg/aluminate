@@ -35,6 +35,11 @@ public class MentorProgram {
     )
     private Set<Member> participants = new HashSet<>();
 
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "payment_id", referencedColumnName = "id")
+    private Payment payment;
+
+
     private LocalDate date;
     private LocalTime time;
     private LocalDateTime createdAt;
