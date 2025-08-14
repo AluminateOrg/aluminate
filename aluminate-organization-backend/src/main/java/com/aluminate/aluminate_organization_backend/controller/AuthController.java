@@ -13,6 +13,7 @@ package com.aluminate.aluminate_organization_backend.controller;
     import org.slf4j.Logger;
     import org.slf4j.LoggerFactory;
     import org.springframework.beans.factory.annotation.Value;
+    import org.springframework.http.ResponseCookie;
     import org.springframework.http.ResponseEntity;
     import org.springframework.transaction.annotation.Transactional;
     import org.springframework.web.bind.annotation.PostMapping;
@@ -46,41 +47,74 @@ package com.aluminate.aluminate_organization_backend.controller;
             this.authService = authService;
         }
 
-        @PostMapping("/login")
+    @PostMapping("/login")
+    public ResponseEntity<ResponseWrapper<LoginResponse>> login(@Valid @RequestBody EncryptedLoginRequest encryptedRequest, HttpServletResponse httpResponse) {
+        try{
+            logger.info("Login attempting...");
+            logger.info("encryptedRequest: " + encryptedRequest);
 
-        public ResponseEntity<ResponseWrapper<LoginResponse>> login(@Valid @RequestBody EncryptedLoginRequest encryptedRequest, HttpServletResponse httpResponse) {
-            try{
-                logger.info("Login attempting...");
-                logger.info("encryptedRequest: " + encryptedRequest);
-
-                //decrypt the request
-                String decrypted = RSAEncryptionUtil.decrypt(
-                        encryptedRequest.getPayload(),
-                        organizationPrivateKey
-                );
-                logger.info("decrypted: " + decrypted);
-                LoginRequest request = objectMapper.readValue(
-                        decrypted,
-                        LoginRequest.class
-                );
+            //decrypt the request
+            String decrypted = RSAEncryptionUtil.decrypt(
+                    encryptedRequest.getPayload(),
+                    organizationPrivateKey
+            );
+            logger.info("decrypted: " + decrypted);
+            LoginRequest request = objectMapper.readValue(
+                    decrypted,
+                    LoginRequest.class
+            );
 
 
-                LoginResponse response = authService.login(request.getEmail(), request.getPassword());
-                //set cookies- jwt,csrf,session
-                authService.setAuthCookies(httpResponse, response.getToken());
-                logger.info("Login successful-> sending cookies");
+            LoginResponse response = authService.login(request.getEmail(), request.getPassword());
+            //set cookies- jwt,csrf,session
+            authService.setAuthCookies(httpResponse, response.getToken());
+            logger.info("Login successful-> sending cookies");
 
-                //set token to null
-                response.setToken(null);
-                ResponseWrapper<LoginResponse> body = new ResponseWrapper<>(true, "Login successful", response);
-                return ResponseEntity.ok(body);
-            }catch (Exception e){
-                logger.error(e.getMessage());
-                ResponseWrapper<LoginResponse> body = new ResponseWrapper<>(false, e.getMessage(), null);
-                return ResponseEntity.badRequest().body(body);
-
-            }
+            //set token to null
+            response.setToken(null);
+            ResponseWrapper<LoginResponse> body = new ResponseWrapper<>(true, "Login successful", response);
+            return ResponseEntity.ok(body);
+        }catch (Exception e){
+            logger.error(e.getMessage());
+            ResponseWrapper<LoginResponse> body = new ResponseWrapper<>(false, e.getMessage(), null);
+            return ResponseEntity.badRequest().body(body);
 
         }
+
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ResponseWrapper<String>> logout(HttpServletResponse response) {
+        // Clear cookies by setting maxAge to 0
+        ResponseCookie jwtCookie = ResponseCookie.from("jwt", "")
+                .httpOnly(true)
+                .secure(false)
+                .sameSite("Strict")
+                .path("/")
+                .maxAge(0)
+                .build();
+
+        ResponseCookie csrfCookie = ResponseCookie.from("csrf-token", "")
+                .httpOnly(false)
+                .secure(false)
+                .sameSite("Strict")
+                .path("/")
+                .maxAge(0)
+                .build();
+
+        ResponseCookie sessionCookie = ResponseCookie.from("sessionId", "")
+                .httpOnly(false)
+                .secure(false)
+                .sameSite("Strict")
+                .path("/")
+                .maxAge(0)
+                .build();
+
+        response.addHeader("Set-Cookie", jwtCookie.toString());
+        response.addHeader("Set-Cookie", csrfCookie.toString());
+        response.addHeader("Set-Cookie", sessionCookie.toString());
+
+        return ResponseEntity.ok(new ResponseWrapper<>(true, "Logout successful", null));
+    }
 
     }
