@@ -32,6 +32,8 @@ public class Mentor {
     private String portfolioUrl;
     private String motivation;
     private boolean isApproved;
+    private String availability;
+    private String status;
 
     /** Mentor languages, each mentor can have multiple languages be entered from a form field */
     @ElementCollection
@@ -56,6 +58,8 @@ public class Mentor {
             orphanRemoval = true
     )
     private Set<MentorProgram> programs = new HashSet<>();
+
+
 
     /** Utility methods for maintaining the relationship */
     public void addProgram(MentorProgram program) {

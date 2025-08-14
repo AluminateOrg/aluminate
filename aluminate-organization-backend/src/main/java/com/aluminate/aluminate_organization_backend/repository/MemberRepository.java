@@ -16,6 +16,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     @Query("SELECT m.email FROM Member m WHERE m.email IS NOT NULL ")
     List<String> findAllEmails();
+    List<Member> findByOrganizationIsNull();
 
     List<Member> findAll();
 

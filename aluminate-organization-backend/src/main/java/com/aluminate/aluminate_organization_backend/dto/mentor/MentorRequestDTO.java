@@ -12,10 +12,11 @@ import java.util.Set;
 @Setter
 public class MentorRequestDTO {
     private Long memberId;
-    private int yearsOfExperience;
+    private int yearsExperience;
     private BigDecimal hourlyRate;
     private String bio;
-    private String linkedInUrl;
+    private String linkedinUrl;
+    private String availability;
     private String portfolioUrl;
     private String motivation;
     private Set<String> languages;

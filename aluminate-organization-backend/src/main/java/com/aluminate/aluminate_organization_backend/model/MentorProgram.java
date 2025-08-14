@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -14,7 +15,7 @@ import java.util.Set;
 @NoArgsConstructor
 @Entity
 @EqualsAndHashCode(of = {"id"})
-
+@Builder
 public class MentorProgram {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,7 +23,7 @@ public class MentorProgram {
 
     /** Many programs can be created by one mentor */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "mentor_id")
+    @JoinColumn(name = "mentor_id", referencedColumnName = "id")
     private Mentor mentor;
 
     /** Many members can join many programs */
@@ -36,6 +37,8 @@ public class MentorProgram {
 
     private LocalDate date;
     private LocalTime time;
+    private LocalDateTime createdAt;
     private String programUrl;
+    private String status;
 
 }

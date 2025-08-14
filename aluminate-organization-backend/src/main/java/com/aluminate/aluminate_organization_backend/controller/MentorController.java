@@ -1,9 +1,7 @@
 package com.aluminate.aluminate_organization_backend.controller;
 
 import com.aluminate.aluminate_organization_backend.dto.mentor.*;
-import com.aluminate.aluminate_organization_backend.model.Mentor;
 import com.aluminate.aluminate_organization_backend.service.mentor.MentorService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,8 +13,12 @@ import java.util.Map;
 @RequestMapping("${api.prefix}/user/mentor")
 public class MentorController {
 
-    @Autowired
-    private MentorService mentorService;
+
+    private final MentorService mentorService;
+
+    public MentorController(MentorService mentorService) {
+        this.mentorService = mentorService;
+    }
 
     @PostMapping("/apply")
     public ResponseEntity<?> applyAsMentor(@RequestBody MentorRequestDTO request) {
@@ -114,6 +116,66 @@ public class MentorController {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("message", "Error deactivating mentor: " + e.getMessage());
             return ResponseEntity.status(500).body(errorResponse);
+        }
+    }
+
+    @PostMapping("/request-session")
+    public ResponseEntity<Map<String, Object>> requestSession(@RequestBody SessionRequestDTO sessionrequestDTO) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            boolean mentorProgram = mentorService.requestSessionWithMentor(sessionrequestDTO);
+            response.put("message", "Session requested successfully");
+            response.put("success", mentorProgram);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("message", "Error requesting session: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    @PostMapping("/respond-session")
+    public ResponseEntity<Map<String, Object>> respondToSessionRequest(@RequestBody SessionRespondDTO sessionRespondDTO) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            if ("accept".equals(sessionRespondDTO.getAction())){
+                boolean sessionResponse = mentorService.acceptSession(sessionRespondDTO);
+                response.put("message", "Session accepted successfully");
+                response.put("success", sessionResponse);
+                return ResponseEntity.ok(response);
+            } else if ("reject".equals(sessionRespondDTO.getAction())) {
+                boolean sessionResponse = mentorService.rejectSession(sessionRespondDTO);
+                response.put("message", "Session rejected successfully");
+                response.put("success", sessionResponse);
+                return ResponseEntity.ok(response);
+            } else {
+                response.put("message", "Invalid action");
+                return ResponseEntity.status(400).body(response);
+            }
+
+        } catch (Exception e) {
+            response.put("message", "Error processing session response: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    @GetMapping("/get-all-sessions/{mentorId}")
+    public ResponseEntity<List<MentorSessionDTO>> getAllSessions(@PathVariable Long mentorId) {
+        try {
+            List<MentorSessionDTO> sessions = mentorService.getAllSessionsByMentor(mentorId);
+            return ResponseEntity.ok(sessions);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(null);
+        }
+    }
+
+    @GetMapping("/get-all-sessions-by-user/{userId}")
+    public ResponseEntity<List<MentorSessionDTO>> getAllSessionsByUser(@PathVariable Long userId) {
+        try {
+            List<MentorSessionDTO> sessions = mentorService.getAllSessionsByMember(userId);
+            System.out.println("Sessions: " + sessions);
+            return ResponseEntity.ok(sessions);
+        } catch (Exception e) {
+            return ResponseEntity.status(400).body(null);
         }
     }
     
