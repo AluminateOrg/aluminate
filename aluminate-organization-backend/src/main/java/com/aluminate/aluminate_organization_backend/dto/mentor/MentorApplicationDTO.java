@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -22,7 +23,7 @@ public class MentorApplicationDTO {
     private String currentPosition;
     private String company;
     private int yearsExperience;
-    private List<String> expertise;
+//    private List<String> expertise;
     private String bio;
     private String motivation;
     private String availability;
@@ -38,4 +39,5 @@ public class MentorApplicationDTO {
     private Set<String> languages;
     private Set<String> skills;
     private boolean isApproved;
+    private BigDecimal hourlyRate;
 }
