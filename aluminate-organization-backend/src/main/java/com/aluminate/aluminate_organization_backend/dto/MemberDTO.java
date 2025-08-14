@@ -1,15 +1,15 @@
 package com.aluminate.aluminate_organization_backend.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import com.aluminate.aluminate_organization_backend.dto.login.UserDTO;
+import lombok.*;
 
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
 @Data
-public class MemberDTO {
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+
+public class MemberDTO implements UserDTO{
     private Long id;
     private String name;
     private String nic;
