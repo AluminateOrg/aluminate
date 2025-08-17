@@ -14,6 +14,7 @@ package com.aluminate.aluminate_organization_backend.config;
      */
     @Configuration
     public class CorsGlobalConfig {
+
         /**
          * Creates and configures a CORS filter bean.
          * This filter allows cross-origin requests from specified origins with specific methods and headers.

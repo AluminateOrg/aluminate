@@ -14,12 +14,13 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("${api.prefix}/announcement")
+@RequestMapping("${api.prefix}")
 public class AnnouncementController {
     @Autowired
     private AnnouncementService announcementService;
 
-    @PostMapping("/multicast-for-all-emails")
+    // ADMIN ONLY
+    @PostMapping("/admin/announcement/multicast-for-all-emails")
     public ResponseEntity<Map<String, Object>> sendEmailAnnouncement(@RequestBody AnnouncementRequest request) {
         int sendCount = 0;
         Map<String, Object> response = new HashMap<>();
