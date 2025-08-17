@@ -17,11 +17,12 @@ import static org.springframework.http.HttpStatus.*;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("${api.prefix}/group")
+@RequestMapping("${api.prefix}")
 public class GroupController {
     private final IGroupsService groupsService;
 
-    @PostMapping("/create")
+    // ADMIN ONLY
+    @PostMapping("/admin/group/create")
     public ResponseEntity<ApiResponse> createGroup(@RequestBody CreateGroupRequest group) {
         try {
             Groups newGroup =  groupsService.createGroup(group);
@@ -31,7 +32,8 @@ public class GroupController {
         }
     }
 
-    @GetMapping("/get/all")
+    // BOTH ADMIN AND MEMBER
+    @GetMapping({"/admin/group/get/all", "/member/group/get/all", "/group/get/all"})
     public ResponseEntity<ApiResponse> getAllGroups() {
         try {
             List<GroupResponseDTO> groups = groupsService.getAllGroups();
@@ -41,7 +43,8 @@ public class GroupController {
         }
     }
 
-    @PutMapping("/{id}/deactivate")
+    // ADMIN ONLY
+    @PutMapping("/admin/group/{id}/deactivate")
     public ResponseEntity<ApiResponse> deactivateGroup(@PathVariable Long id) {
         try {
             GroupResponseDTO deactivatedGroup = groupsService.deactivateGroup(id);
@@ -58,7 +61,8 @@ public class GroupController {
         }
     }
 
-    @PutMapping("/{id}/toggle-status")
+    // ADMIN ONLY
+    @PutMapping("/admin/group/{id}/toggle-status")
     public ResponseEntity<ApiResponse> toggleGroupStatus(@PathVariable Long id) {
         try {
             GroupResponseDTO updatedGroup = groupsService.toggleGroupStatus(id);
@@ -75,7 +79,8 @@ public class GroupController {
         }
     }
 
-    @DeleteMapping("/{id}/delete")
+    // ADMIN ONLY
+    @DeleteMapping("/admin/group/{id}/delete")
     public ResponseEntity<ApiResponse> deleteGroup(@PathVariable Long id) {
         try {
             GroupResponseDTO deletedGroup = groupsService.deleteGroup(id);
@@ -92,7 +97,8 @@ public class GroupController {
         }
     }
 
-    @PostMapping("/join")
+    // MEMBER ONLY
+    @PostMapping("/member/group/join")
     public ResponseEntity<ApiResponse> joinGroup(@RequestBody GroupJoinRequest request) {
         try {
             GroupResponseDTO result = groupsService.joinGroup(request);
@@ -109,7 +115,8 @@ public class GroupController {
         }
     }
 
-    @PutMapping("/{groupId}/approve/{memberId}")
+    // ADMIN ONLY
+    @PutMapping("/admin/group/{groupId}/approve/{memberId}")
     public ResponseEntity<ApiResponse> approveJoinRequest(
             @PathVariable Long groupId,
             @PathVariable Long memberId) {
@@ -128,7 +135,8 @@ public class GroupController {
         }
     }
 
-    @PutMapping("/{groupId}/reject/{memberId}")
+    // ADMIN ONLY
+    @PutMapping("/admin/group/{groupId}/reject/{memberId}")
     public ResponseEntity<ApiResponse> rejectJoinRequest(
             @PathVariable Long groupId,
             @PathVariable Long memberId) {
@@ -147,7 +155,8 @@ public class GroupController {
         }
     }
 
-    @DeleteMapping("/{groupId}/leave/{memberId}")
+    // MEMBER ONLY
+    @DeleteMapping("/member/group/{groupId}/leave/{memberId}")
     public ResponseEntity<ApiResponse> leaveGroup(
             @PathVariable Long groupId,
             @PathVariable Long memberId) {
@@ -166,7 +175,8 @@ public class GroupController {
         }
     }
 
-    @GetMapping("/get/pending-requests")
+    // ADMIN ONLY
+    @GetMapping("/admin/group/get/pending-requests")
     public ResponseEntity<ApiResponse> getPendingRequests() {
         try {
             List<PendingRequestDTO> pendingRequests = groupsService.getPendingRequests();
