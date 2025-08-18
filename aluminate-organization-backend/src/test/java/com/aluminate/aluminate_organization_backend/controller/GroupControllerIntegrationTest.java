@@ -7,12 +7,14 @@ import com.aluminate.aluminate_organization_backend.repository.GroupsRepository;
 import com.aluminate.aluminate_organization_backend.repository.MemberGroupRepository;
 import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,7 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Transactional
+@ActiveProfiles("test")
 class GroupControllerIntegrationTest {
 
     @Autowired
@@ -62,13 +64,22 @@ class GroupControllerIntegrationTest {
         groupsRepository.save(testGroup);
     }
 
+    @AfterEach
+    void tearDown() {
+        // Clean in child-to-parent order to avoid FK violations
+        memberGroupRepository.deleteAllInBatch();
+        memberRepository.deleteAllInBatch();
+        groupsRepository.deleteAllInBatch();
+    }
+
+
     @Test
     void joinGroup_WhenApprovalNotRequired_ShouldSucceed() throws Exception {
         GroupJoinRequest request = new GroupJoinRequest();
         request.setMemberId(testMember.getId());
         request.setGroupId(testGroup.getId());
 
-        mockMvc.perform(post("/api/v1/group/join")
+        mockMvc.perform(post("/api/v1/portal/group/join")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -86,7 +97,7 @@ class GroupControllerIntegrationTest {
         request.setMemberId(testMember.getId());
         request.setGroupId(testGroup.getId());
 
-        mockMvc.perform(post("/api/v1/group/join")
+        mockMvc.perform(post("/api/v1/portal/group/join")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -105,13 +116,13 @@ class GroupControllerIntegrationTest {
         request.setGroupId(testGroup.getId());
 
         // Create pending request
-        mockMvc.perform(post("/api/v1/group/join")
+        mockMvc.perform(post("/api/v1/portal/group/join")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
 
         // Approve the request
-        mockMvc.perform(put("/api/v1/group/{groupId}/approve/{memberId}",
+        mockMvc.perform(put("/api/v1/portal/group/{groupId}/approve/{memberId}",
                         testGroup.getId(), testMember.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Join request approved successfully!"))
@@ -129,13 +140,13 @@ class GroupControllerIntegrationTest {
         request.setGroupId(testGroup.getId());
 
         // Create pending request
-        mockMvc.perform(post("/api/v1/group/join")
+        mockMvc.perform(post("/api/v1/portal/group/join")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
 
         // Reject the request
-        mockMvc.perform(put("/api/v1/group/{groupId}/reject/{memberId}",
+        mockMvc.perform(put("/api/v1/portal/group/{groupId}/reject/{memberId}",
                         testGroup.getId(), testMember.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Join request rejected successfully!"))

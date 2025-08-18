@@ -68,7 +68,7 @@ package com.aluminate.aluminate_organization_backend.controller;
             LoginResponse response = authService.login(request.getEmail(), request.getPassword());
             //set cookies- jwt,csrf,session
             authService.setAuthCookies(httpResponse, response.getToken());
-            logger.info("Login successful-> sending cookies");
+            logger.info("Login successful-> sending cookies :{}", response.getToken());
 
             //set token to null
             response.setToken(null);

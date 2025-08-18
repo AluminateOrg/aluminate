@@ -120,7 +120,7 @@ class GroupsServiceTest {
         memberGroup.setGroup(testGroup);
         memberGroup.setRequestStatus(GroupJoinRequestStatus.PENDING);
 
-        when(memberGroupRepository.findByMemberIdAndGroupId(1L, 1L))
+        when(memberGroupRepository.findByMember_IdAndGroup_Id(1L, 1L))
                 .thenReturn(Optional.of(memberGroup));
         when(groupsRepository.save(any(Groups.class))).thenReturn(testGroup);
         when(memberGroupRepository.save(any(MemberGroup.class))).thenReturn(memberGroup);
@@ -142,7 +142,7 @@ class GroupsServiceTest {
         memberGroup.setGroup(testGroup);
         memberGroup.setRequestStatus(GroupJoinRequestStatus.PENDING);
 
-        when(memberGroupRepository.findByMemberIdAndGroupId(1L, 1L))
+        when(memberGroupRepository.findByMember_IdAndGroup_Id(1L, 1L))
                 .thenReturn(Optional.of(memberGroup));
         when(memberGroupRepository.save(any(MemberGroup.class))).thenReturn(memberGroup);
 
