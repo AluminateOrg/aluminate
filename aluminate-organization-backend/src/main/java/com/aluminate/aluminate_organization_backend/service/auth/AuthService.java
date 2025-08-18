@@ -178,7 +178,7 @@ public class AuthService {
 
                 //save
                 admin.setOrganization(organization);
-                adminRepository.save(admin);
+                Admin savedAdmin = adminRepository.save(admin);
 
 
                 //save
@@ -186,6 +186,7 @@ public class AuthService {
 
                 //create AdminDTO
                 AdminDTO adminDTO = new AdminDTO(
+                        savedAdmin.getId(),
                         adminGlobalDTO.getName(),
                         adminGlobalDTO.getEmail(),
                         adminGlobalDTO.getPhone()
@@ -264,6 +265,7 @@ public class AuthService {
 
     private AdminDTO createAdminDTO(Admin admin) {
         return new AdminDTO(
+                admin.getId(),
                 admin.getName(),
                 admin.getEmail(),
                 admin.getPhone()

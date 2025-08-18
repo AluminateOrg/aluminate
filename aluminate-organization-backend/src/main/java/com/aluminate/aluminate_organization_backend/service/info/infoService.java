@@ -59,6 +59,7 @@ public class infoService {
             }
             //create the AdminDTO
             AdminDTO sendingDTO = new AdminDTO(
+                    admin.getId(),
                     admin.getName(),
                     admin.getEmail(),
                     admin.getPhone()

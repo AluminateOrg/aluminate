@@ -164,7 +164,7 @@ public class GroupsService implements IGroupsService {
     @Override
     @Transactional
     public GroupResponseDTO approveJoinRequest(Long groupId, Long memberId) {
-        MemberGroup memberGroup = memberGroupRepository.findByMemberIdAndGroupId(memberId, groupId)
+        MemberGroup memberGroup = memberGroupRepository.findByMember_IdAndGroup_Id(memberId, groupId)
                 .orElseThrow(() -> new IllegalArgumentException("Join request not found"));
 
         if (memberGroup.getRequestStatus() != GroupJoinRequestStatus.PENDING) {
@@ -189,7 +189,7 @@ public class GroupsService implements IGroupsService {
     @Override
     @Transactional
     public GroupResponseDTO rejectJoinRequest(Long groupId, Long memberId) {
-        MemberGroup memberGroup = memberGroupRepository.findByMemberIdAndGroupId(memberId, groupId)
+        MemberGroup memberGroup = memberGroupRepository.findByMember_IdAndGroup_Id(memberId, groupId)
                 .orElseThrow(() -> new IllegalArgumentException("Join request not found"));
 
         if (memberGroup.getRequestStatus() != GroupJoinRequestStatus.PENDING) {
@@ -206,7 +206,7 @@ public class GroupsService implements IGroupsService {
     @Override
     @Transactional
     public GroupResponseDTO leaveGroup(Long groupId, Long memberId) {
-        MemberGroup memberGroup = memberGroupRepository.findByMemberIdAndGroupId(memberId, groupId)
+        MemberGroup memberGroup = memberGroupRepository.findByMember_IdAndGroup_Id(memberId, groupId)
                 .orElseThrow(() -> new IllegalArgumentException("Member is not in this group"));
 
         if (memberGroup.getRole().equals("ADMIN")) {
