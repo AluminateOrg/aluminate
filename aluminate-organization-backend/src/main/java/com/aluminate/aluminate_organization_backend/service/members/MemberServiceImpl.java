@@ -99,7 +99,7 @@ public class MemberServiceImpl implements IMemberService {
         Member member = memberRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Member not found with ID: " + id));
 
-        member.setIsActive(false);
+        member.setActive(false);
         memberRepository.save(member);
     }
 
