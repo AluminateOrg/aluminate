@@ -21,7 +21,7 @@ import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("${api.prefix}/member")
+@RequestMapping("${api.prefix}")
 public class MemberController {
 
     private final IMemberService memberService;
@@ -32,7 +32,8 @@ public class MemberController {
     @Autowired
     private MemberService memberServiceP;
 
-    @PostMapping("/create")
+    // ADMIN ONLY
+    @PostMapping("/admin/member/create")
     public ResponseEntity<ApiResponse> addMember(@RequestBody MemberRequestDTO request) {
         try {
             Member newMember = memberService.createMember(request);
@@ -44,7 +45,8 @@ public class MemberController {
         }
     }
 
-    @GetMapping("/get/count")
+    // BOTH MEMBER AND ADMIN
+    @GetMapping({"/admin/member/get/count", "/member/member/get/count"})
     public ResponseEntity<ApiResponse> getMemberCount() {
         try {
             long count = memberService.getMemberCount();
@@ -55,7 +57,8 @@ public class MemberController {
         }
     }
 
-    @GetMapping("/get/all")
+    // BOTH MEMBER AND ADMIN
+    @GetMapping({"/admin/member/get/all", "/member/member/get/all"})
     public ResponseEntity<ApiResponse> getAllMembers() {
         try{
             List<MemberResponseDTO> members = memberServiceP.getAllMembers();
@@ -65,7 +68,8 @@ public class MemberController {
         }
     }
 
-    @GetMapping("/{memberId}/groups/membership-status")
+    // BOTH MEMBER AND ADMIN
+    @GetMapping({"/admin/member/{memberId}/groups/membership-status", "/member/member/{memberId}/groups/membership-status"})
     public ResponseEntity<ApiResponse> getMemberGroupMembershipStatuses(@PathVariable Long memberId) {
         try {
             List<GroupMembershipStatusDTO> statuses = memberService.getMemberGroupMembershipStatuses(memberId);
