@@ -1,0 +1,1 @@
+package com.aluminate.aluminate_organization_backend.service.donation;

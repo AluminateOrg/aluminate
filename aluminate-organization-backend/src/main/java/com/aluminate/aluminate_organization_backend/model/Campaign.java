@@ -54,6 +54,31 @@ public class Campaign {
     private boolean isDeleted = false;
     private LocalDateTime deletedAt;
 
-    @OneToMany(mappedBy = "campaign")
+    @OneToMany(mappedBy = "campaign", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Builder.Default
     private Set<Donation> donations = new HashSet<>();
+
+    // Utility method to add donation
+    public void addDonation(Donation donation) {
+        donations.add(donation);
+        donation.setCampaign(this);
+    }
+
+    // Calculate progress percentage
+    public double getProgressPercentage() {
+        if (goal == null || goal.compareTo(BigDecimal.ZERO) == 0) {
+            return 0.0;
+        }
+        return raised.divide(goal, 4, BigDecimal.ROUND_HALF_UP).multiply(new BigDecimal(100)).doubleValue();
+    }
+
+    // Check if campaign is expired
+    public boolean isExpired() {
+        return endDate != null && endDate.isBefore(LocalDate.now());
+    }
+
+    // Check if campaign can accept donations
+    public boolean canAcceptDonations() {
+        return isActive && !isDeleted && !isExpired();
+    }
 }

@@ -166,6 +166,30 @@ public class CampaignService implements ICampaignService {
         return mapToCampaignResponseDTO(savedCampaign);
     }
 
+    /**
+     * Retrieves all active campaigns for public viewing (members can see to donate).
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<CampaignResponseDTO> getActiveCampaignsForDonation() {
+        return campaignRepository.findAllByIsDeletedFalseAndIsActiveTrue()
+                .stream()
+                .map(this::mapToCampaignResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Retrieves active campaign by ID for donation (public access).
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public CampaignResponseDTO getActiveCampaignById(Long id) {
+        Campaign campaign = campaignRepository.findById(id)
+                .filter(c -> !c.isDeleted() && c.isActive())
+                .orElseThrow(() -> new ResourceNotFoundException("Active campaign not found with id: " + id));
+        return mapToCampaignResponseDTO(campaign);
+    }
+
     private CampaignResponseDTO mapToCampaignResponseDTO(Campaign campaign) {
         return CampaignResponseDTO.builder()
                 .id(campaign.getId())

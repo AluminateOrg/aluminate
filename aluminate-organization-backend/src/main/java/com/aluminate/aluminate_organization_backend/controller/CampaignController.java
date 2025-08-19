@@ -57,6 +57,20 @@ public class CampaignController {
     }
 
     /**
+     * Retrieves active campaigns for donation.
+     */
+    @GetMapping("/get/active")
+    public ResponseEntity<ApiResponse> getActiveCampaignsForDonation() {
+        try {
+            List<CampaignResponseDTO> campaigns = campaignService.getActiveCampaignsForDonation();
+            return ResponseEntity.ok(new ApiResponse("Active campaigns retrieved successfully", campaigns));
+        } catch (Exception e) {
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse("Failed to retrieve active campaigns: " + e.getMessage(), null));
+        }
+    }
+
+    /**
      * Retrieves a campaign by its ID.
      */
     @GetMapping("/{id}")
@@ -93,7 +107,6 @@ public class CampaignController {
                     .body(new ApiResponse("Failed to update campaign status: " + e.getMessage(), null));
         }
     }
-
     /**
      * Updates an existing campaign.
      */
@@ -118,7 +131,6 @@ public class CampaignController {
                     .body(new ApiResponse("Failed to update campaign: " + e.getMessage(), null));
         }
     }
-
     /**
      * Deletes a campaign by its ID (soft delete).
      */

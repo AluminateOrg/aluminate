@@ -10,4 +10,7 @@ import java.util.List;
 public interface CampaignRepository extends JpaRepository<Campaign, Long> {
     boolean existsByTitleAndIsDeletedFalse(String title);
     List<Campaign> findAllByIsDeletedFalse();
+
+    // Add this new method for active campaigns
+    List<Campaign> findAllByIsDeletedFalseAndIsActiveTrue();
 }

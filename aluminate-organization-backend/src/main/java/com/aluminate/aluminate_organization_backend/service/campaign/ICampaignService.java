@@ -35,4 +35,15 @@ public interface ICampaignService {
      */
     CampaignResponseDTO deleteCampaign(Long id);
     CampaignResponseDTO updateCampaign(Long id, UpdateCampaignRequest request);
+
+
+    /**
+     * Retrieves all active campaigns for donation purposes.
+     */
+    List<CampaignResponseDTO> getActiveCampaignsForDonation();
+
+    /**
+     * Retrieves an active campaign by ID for donation.
+     */
+    CampaignResponseDTO getActiveCampaignById(Long id);
 }
