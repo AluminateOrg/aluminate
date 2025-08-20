@@ -5,9 +5,11 @@ import com.aluminate.aluminate_organization_backend.dto.group.GroupMembershipSta
 import com.aluminate.aluminate_organization_backend.model.Groups;
 import com.aluminate.aluminate_organization_backend.model.Member;
 import com.aluminate.aluminate_organization_backend.model.MemberGroup;
+import com.aluminate.aluminate_organization_backend.model.Organization;
 import com.aluminate.aluminate_organization_backend.repository.GroupsRepository;
 import com.aluminate.aluminate_organization_backend.repository.MemberGroupRepository;
 import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
+import com.aluminate.aluminate_organization_backend.repository.OrganizationRepository;
 import com.aluminate.aluminate_organization_backend.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +25,8 @@ public class MemberServiceImpl implements IMemberService {
 
     private final MemberRepository memberRepository;
     private final MemberGroupRepository memberGroupRepository;
-    private final GroupsRepository groupRepository; // ✅ Add this
+    private final GroupsRepository groupRepository;
+    private final OrganizationRepository organizationRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -34,6 +37,11 @@ public class MemberServiceImpl implements IMemberService {
     public Member createMember(MemberRequestDTO dto) {
         // Save the member
         String rawPassword = dto.getPassword();
+
+        //get the organization by id
+        Organization organization = organizationRepository.findById(dto.getOrganizationId())
+                .orElseThrow(() -> new IllegalArgumentException("Organization not found: ID " + dto.getOrganizationId()));
+
         Member member = Member.builder()
                 .name(dto.getName())
                 .nic(dto.getNic())
@@ -42,6 +50,7 @@ public class MemberServiceImpl implements IMemberService {
                 .regNo(dto.getRegNo())
                 .address(dto.getAddress())
                 .batch(dto.getBatch())
+                .organization(organization)
                 .password(passwordEncoder.encode(rawPassword))
                 .build();
 
