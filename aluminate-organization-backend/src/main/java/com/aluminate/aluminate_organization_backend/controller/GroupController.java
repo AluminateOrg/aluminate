@@ -36,6 +36,7 @@ public class GroupController {
     @GetMapping({"/admin/group/get/all", "/member/group/get/all", "/group/get/all"})
     public ResponseEntity<ApiResponse> getAllGroups() {
         try {
+            System.out.println("Fetching all groups");
             List<GroupResponseDTO> groups = groupsService.getAllGroups();
             return ResponseEntity.ok(new ApiResponse("Groups retrieved successfully!", groups));
         } catch (Exception e) {
