@@ -17,11 +17,12 @@ import static org.springframework.http.HttpStatus.*;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("${api.prefix}/event")
+@RequestMapping("${api.prefix}")
 public class EventController {
     private final IEventService eventService;
 
-    @PostMapping("/create")
+    // ADMIN ONLY
+    @PostMapping("/admin/event/create")
     public ResponseEntity<ApiResponse> createEvent(@RequestBody CreateEventRequest request) {
         try {
             Event createdEvent = eventService.createEvent(request);
@@ -37,7 +38,8 @@ public class EventController {
         }
     }
 
-    @GetMapping("/get/all")
+    // BOTH MEMBER AND ADMIN
+    @GetMapping({"/admin/event/get/all", "/member/event/get/all"})
     public ResponseEntity<ApiResponse> getAllEvents() {
         try {
             List<EventResponseDTO> events = eventService.getAllEvents();
@@ -49,7 +51,8 @@ public class EventController {
         }
     }
 
-    @PutMapping("/{id}/publish")
+    // ADMIN ONLY
+    @PutMapping("/admin/event/{id}/publish")
     public ResponseEntity<ApiResponse> publishEvent(@PathVariable Long id) {
         try {
             EventResponseDTO publishedEvent = eventService.publishEvent(id);
@@ -69,7 +72,8 @@ public class EventController {
         }
     }
 
-    @PutMapping("/{id}/cancel")
+    // ADMIN ONLY
+    @PutMapping("/admin/event/{id}/cancel")
     public ResponseEntity<ApiResponse> cancelEvent(@PathVariable Long id) {
         try {
             EventResponseDTO cancelledEvent = eventService.cancelEvent(id);
@@ -89,7 +93,8 @@ public class EventController {
         }
     }
 
-    @DeleteMapping("/{id}/delete")
+    // ADMIN ONLY
+    @DeleteMapping("/admin/event/{id}/delete")
     public ResponseEntity<ApiResponse> deleteEvent(@PathVariable Long id) {
         try {
             EventResponseDTO deletedEvent = eventService.deleteEvent(id);

@@ -1,5 +1,6 @@
 package com.aluminate.aluminate_organization_backend.dto;
 
+import com.aluminate.aluminate_organization_backend.model.Organization;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -26,6 +27,7 @@ public class MemberRequestDTO {
     private String linkedinUrl;
     private String githubUrl;
     private String websiteUrl;
+    private Long organizationId;
     private int batch;
     private List<Long> groupIds;
 

@@ -9,10 +9,12 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PaymentHashResponse {
+public class PayHerePaymentResponse {
     private String orderId;
     private String hash;
-    private String amount;
     private String merchantId;
+    private String amount;
     private String currency;
+    private String itemDescription;
+    private boolean sandbox;
 }

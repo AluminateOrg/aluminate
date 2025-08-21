@@ -1,9 +1,15 @@
 package com.aluminate.aluminate_organization_backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Getter
@@ -14,7 +20,7 @@ import java.util.Set;
 @Builder
 @EqualsAndHashCode(of = {"id"})
 
-public class Member {
+public class Member extends GlobalUser implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -36,6 +42,14 @@ public class Member {
     @Builder.Default
     private boolean isActive = true;
 
+    @Builder.Default
+    private boolean isMembershipPaid = false;
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority("ROLE_MEMBER"));
+    }
+
     /** One member can be a member of multiple groups */
     @OneToMany(mappedBy = "member")
     private Set<MemberGroup> memberGroups = new HashSet<>();
@@ -51,6 +65,18 @@ public class Member {
     /** One member can receive multiple notifications */
     @OneToMany(mappedBy = "member")
     private Set<Notification> notifications = new HashSet<>();
+
+    @ManyToOne
+    @JoinColumn(
+            name = "organization_id",
+            referencedColumnName = "id",
+            foreignKey = @ForeignKey(
+                    name = "fk_member_organization",
+                    foreignKeyDefinition = "FOREIGN KEY (organization_id) REFERENCES organization(id) ON UPDATE CASCADE ON DELETE CASCADE"
+            )
+    )
+    private Organization organization;
+
 
 
     /** Utility method to add donation */

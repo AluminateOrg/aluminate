@@ -2,6 +2,7 @@ package com.aluminate.aluminate_organization_backend.controller;
 
 import com.aluminate.aluminate_organization_backend.dto.MemberRequestDTO;
 import com.aluminate.aluminate_organization_backend.dto.MemberResponseDTO;
+import com.aluminate.aluminate_organization_backend.dto.group.GroupMembershipStatusDTO;
 import com.aluminate.aluminate_organization_backend.dto.response.ApiResponse;
 import com.aluminate.aluminate_organization_backend.model.Member;
 import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
@@ -20,7 +21,7 @@ import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("${api.prefix}/member")
+@RequestMapping("${api.prefix}")
 public class MemberController {
 
     private final IMemberService memberService;
@@ -31,7 +32,8 @@ public class MemberController {
     @Autowired
     private MemberService memberServiceP;
 
-    @PostMapping("/create")
+    // ADMIN ONLY
+    @PostMapping("/admin/member/create")
     public ResponseEntity<ApiResponse> addMember(@RequestBody MemberRequestDTO request) {
         try {
             Member newMember = memberService.createMember(request);
@@ -43,7 +45,8 @@ public class MemberController {
         }
     }
 
-    @GetMapping("/get/count")
+    // BOTH MEMBER AND ADMIN
+    @GetMapping({"/admin/member/get/count", "/member/member/get/count"})
     public ResponseEntity<ApiResponse> getMemberCount() {
         try {
             long count = memberService.getMemberCount();
@@ -54,13 +57,29 @@ public class MemberController {
         }
     }
 
-    @GetMapping("/get/all")
+    // BOTH MEMBER AND ADMIN
+    @GetMapping({"/admin/member/get/all", "/member/member/get/all"})
     public ResponseEntity<ApiResponse> getAllMembers() {
         try{
             List<MemberResponseDTO> members = memberServiceP.getAllMembers();
             return ResponseEntity.ok(new ApiResponse("Member retrieved successfully!", members));
         } catch (Exception e) {
             return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(new ApiResponse("Failed to retrieve members.", null));
+        }
+    }
+
+    // BOTH MEMBER AND ADMIN
+    @GetMapping({"/admin/member/{memberId}/groups/membership-status", "/member/member/{memberId}/groups/membership-status"})
+    public ResponseEntity<ApiResponse> getMemberGroupMembershipStatuses(@PathVariable Long memberId) {
+        try {
+            List<GroupMembershipStatusDTO> statuses = memberService.getMemberGroupMembershipStatuses(memberId);
+            return ResponseEntity.ok(new ApiResponse("Membership statuses retrieved successfully!", statuses));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(NOT_FOUND)
+                    .body(new ApiResponse(e.getMessage(), null));
+        } catch (Exception e) {
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse("Failed to retrieve membership statuses", null));
         }
     }
 }

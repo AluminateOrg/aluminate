@@ -3,6 +3,8 @@ package com.aluminate.aluminate_organization_backend.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -24,5 +26,12 @@ public class MemberGroup {
     private Groups group;
 
     private boolean isApproved; // true if the member has been approved to join the group
+
+    @Enumerated(EnumType.STRING)
+    private GroupJoinRequestStatus requestStatus;
+
     private String role; // "ADMIN", "MEMBER"
+
+    private LocalDateTime requestDate;
+    private LocalDateTime responseDate;
 }

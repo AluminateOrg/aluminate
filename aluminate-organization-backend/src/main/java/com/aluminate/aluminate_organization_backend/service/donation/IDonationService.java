@@ -1,66 +1,34 @@
 package com.aluminate.aluminate_organization_backend.service.donation;
 
-import com.aluminate.aluminate_organization_backend.dto.donation.CreateDonationRequest;
-import com.aluminate.aluminate_organization_backend.dto.donation.DonationResponseDTO;
-import com.aluminate.aluminate_organization_backend.dto.payment.PaymentHashRequest;
-import com.aluminate.aluminate_organization_backend.dto.payment.PaymentHashResponse;
-import com.aluminate.aluminate_organization_backend.dto.payment.PaymentNotificationRequest;
+import com.aluminate.aluminate_organization_backend.dto.donation.*;
+import com.aluminate.aluminate_organization_backend.model.Donation;
 
-import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * Service interface for managing donation operations.
- */
 public interface IDonationService {
 
-    /**
-     * Creates a new donation record (initially PENDING status).
-     */
-    DonationResponseDTO createDonation(Long memberId, CreateDonationRequest request);
-
-    /**
-     * Updates donation with PayHere payment order ID.
-     */
-    DonationResponseDTO updatePaymentOrderId(Long donationId, String paymentOrderId);
-
-    /**
-     * Generates payment hash for PayHere integration.
-     */
-    PaymentHashResponse generatePaymentHash(PaymentHashRequest request);
-
-    /**
-     * Handles payment notification from PayHere.
-     */
-    void handlePaymentNotification(PaymentNotificationRequest notification);
-
-    /**
-     * Retrieves all donations by a specific member.
-     */
+    // Basic CRUD operations
     List<DonationResponseDTO> getDonationsByMember(Long memberId);
-
-    /**
-     * Retrieves all donations for a specific campaign.
-     */
     List<DonationResponseDTO> getDonationsByCampaign(Long campaignId);
-
-    /**
-     * Retrieves a donation by its ID.
-     */
+    List<DonationResponseDTO> getAllDonations();
     DonationResponseDTO getDonationById(Long donationId);
 
-    /**
-     * Gets total amount donated by a member.
-     */
-    BigDecimal getTotalDonatedByMember(Long memberId);
+    // Status management
+    List<DonationResponseDTO> getDonationsByStatus(String status);
+    DonationResponseDTO updateDonationStatus(Long donationId, String status);
 
-    /**
-     * Updates campaign statistics after successful donation.
-     */
-    void updateCampaignStatistics(Long campaignId);
+    // Statistics
+    MemberDonationStatsDTO getDonationStatsByMember(Long memberId);
+    DonationStatsDTO getAllDonationStats();
+    DonationStatsDTO getDonationStatsByCampaign(Long campaignId);
 
-    /**
-     * Retrieves all donations (admin function).
-     */
-    List<DonationResponseDTO> getAllDonations();
+    // Analytics
+    List<DonationResponseDTO> getRecentDonations(int limit);
+    List<DonationResponseDTO> getTopDonations(int limit);
+    List<MemberDonationStatsDTO> getTopDonors(int limit);
+
+    // Business operations
+    Donation createDonation(DonationRequestDTO request);
+    boolean processDonationCompletion(String orderId);
+    boolean processDonationFailure(String orderId, String reason);
 }

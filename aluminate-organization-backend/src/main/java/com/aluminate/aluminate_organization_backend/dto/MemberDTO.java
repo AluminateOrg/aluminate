@@ -1,6 +1,15 @@
 package com.aluminate.aluminate_organization_backend.dto;
 
-public class MemberDTO {
+import com.aluminate.aluminate_organization_backend.dto.login.UserDTO;
+import lombok.*;
+
+@Data
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+
+public class MemberDTO implements UserDTO{
     private Long id;
     private String name;
     private String nic;
@@ -9,7 +18,6 @@ public class MemberDTO {
     private String regNo;
     private String address;
     private String photoUrl;
-    private String password;
     private String degree;
     private String company;
     private String position;
@@ -17,4 +25,5 @@ public class MemberDTO {
     private String githubUrl;
     private String websiteUrl;
     private int batch;
+
 }
