@@ -29,6 +29,8 @@ public class MemberRowDTO {
     @NotNull(message = "Batch is required")
     private Integer batch;
 
+    private Long organizationId;
+
     private String status = "valid";
 
     private Map<String, String> errors = new HashMap<>();
