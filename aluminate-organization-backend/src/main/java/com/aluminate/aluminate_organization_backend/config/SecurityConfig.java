@@ -45,6 +45,7 @@ package com.aluminate.aluminate_organization_backend.config;
                             .requestMatchers(apiPrefix + "/auth/**", apiPrefix + "/public/**").permitAll()
                             .requestMatchers(apiPrefix + "/admin/**").hasRole("ADMIN")
                             .requestMatchers(apiPrefix + "/member/**").hasRole("MEMBER")
+                            .requestMatchers(apiPrefix + "/common/**").hasAnyRole("ADMIN","MEMBER")
                             .anyRequest().denyAll()
                     )
                     .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

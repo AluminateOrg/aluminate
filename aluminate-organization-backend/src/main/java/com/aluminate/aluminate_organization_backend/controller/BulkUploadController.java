@@ -1,6 +1,8 @@
 package com.aluminate.aluminate_organization_backend.controller;
 
 import com.aluminate.aluminate_organization_backend.dto.MemberRowDTO;
+import com.aluminate.aluminate_organization_backend.model.Organization;
+import com.aluminate.aluminate_organization_backend.repository.OrganizationRepository;
 import com.aluminate.aluminate_organization_backend.service.AnnotationValidationService;
 import com.aluminate.aluminate_organization_backend.service.CsvParserService;
 import com.aluminate.aluminate_organization_backend.service.GeminiValidationService;
@@ -22,17 +24,23 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("${api.prefix}/admin")
 public class BulkUploadController {
-    @Autowired
-    private CsvParserService csvParserService;
-    @Autowired
-    private AnnotationValidationService annotationValidationService;
-    @Autowired
-    private GeminiValidationService geminiValidationService;
-    @Autowired
-    private MemberService memberService;
+    private final CsvParserService csvParserService;
+    private final AnnotationValidationService annotationValidationService;
+    private final GeminiValidationService geminiValidationService;
+    private final MemberService memberService;
+    private final OrganizationRepository organizationRepository;
 
-    @PostMapping("/bulk-upload")
-    public ResponseEntity<Map<String, Object>> bulkUpload(@RequestParam("file") MultipartFile file, @RequestParam("groups") String groupsJson) throws IOException, JsonProcessingException {
+    public BulkUploadController(CsvParserService csvParserService, AnnotationValidationService annotationValidationService,
+                                GeminiValidationService geminiValidationService, MemberService memberService, OrganizationRepository organizationRepository) {
+        this.csvParserService = csvParserService;
+        this.annotationValidationService = annotationValidationService;
+        this.geminiValidationService = geminiValidationService;
+        this.memberService = memberService;
+        this.organizationRepository = organizationRepository;
+    }
+
+    @PostMapping("/member/bulk-upload")
+    public ResponseEntity<Map<String, Object>> bulkUpload(@RequestParam("file") MultipartFile file, @RequestParam("groups") String groupsJson, @RequestParam("organizationId") Long organizationId ) throws IOException, JsonProcessingException {
         List<MemberRowDTO> parsedRows = csvParserService.parseCSV(file);
 
         System.out.println("Parsed rows: " + parsedRows);
@@ -53,6 +61,14 @@ public class BulkUploadController {
 
         System.out.println("validated rows by the first phase: " + validated);
 
+        //get the organization by id
+        if (organizationId == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Organization ID is required"));
+        }
+
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new IllegalArgumentException("Organization not found with ID: " + organizationId));
+
         //ai validate for invalid rows
         List<MemberRowDTO> invalidRows = validated.stream().filter(r -> "invalid".equals(r.getStatus())).toList();
         if (!invalidRows.isEmpty()) {
@@ -61,14 +77,14 @@ public class BulkUploadController {
         }
         //save valid rows
         List<MemberRowDTO> validRows = validated.stream().filter(r -> "valid".equals(r.getStatus())).toList();
-        int savedCount = memberService.saveValidMembers(validRows, groupId);
+        int savedCount = memberService.saveValidMembers(validRows, groupId, organization);
         Map<String, Object> response = new HashMap<>();
         response.put("savedCount", savedCount);
         response.put("invalidRows", invalidRows);
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/bulk-finalize")
+    @PostMapping("/member/bulk-finalize")
     public ResponseEntity<Map<String, Object>> finalizeBulkUpload(@RequestBody Map<String, Object> requestBody) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
 
@@ -81,6 +97,18 @@ public class BulkUploadController {
         if (groups.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("message", "Group ID is required"));
         }
+
+        //extract organization id
+        Long organizationId = mapper.convertValue(requestBody.get("organizationId"), Long.class);
+
+        if (organizationId == null) {
+            throw new IllegalArgumentException("Organization ID is required");
+        }
+
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new IllegalArgumentException("Organization not found with ID: " + organizationId));
+
+
         String groupId = groups.get(0); // Single group ID
         System.out.println("Finalizing for group ID: " + groupId);
 
@@ -122,7 +150,7 @@ public class BulkUploadController {
                 .filter(r -> "valid".equalsIgnoreCase(r.getStatus()))
                 .toList();
 
-        int savedCount = memberService.saveValidMembers(validRows, Long.parseLong(groupId));
+        int savedCount = memberService.saveValidMembers(validRows, Long.parseLong(groupId), organization);
 
         return ResponseEntity.ok(Map.of(
                 "savedCount", savedCount,

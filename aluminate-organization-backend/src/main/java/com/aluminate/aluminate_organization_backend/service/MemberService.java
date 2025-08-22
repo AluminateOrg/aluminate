@@ -5,9 +5,11 @@ import com.aluminate.aluminate_organization_backend.dto.MemberRowDTO;
 import com.aluminate.aluminate_organization_backend.model.Groups;
 import com.aluminate.aluminate_organization_backend.model.Member;
 import com.aluminate.aluminate_organization_backend.model.MemberGroup;
+import com.aluminate.aluminate_organization_backend.model.Organization;
 import com.aluminate.aluminate_organization_backend.repository.GroupsRepository;
 import com.aluminate.aluminate_organization_backend.repository.MemberGroupRepository;
 import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
+import com.aluminate.aluminate_organization_backend.repository.OrganizationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,25 +18,34 @@ import java.util.List;
 
 @Service
 public class MemberService {
-    @Autowired
-    private MemberRepository memberRepository;
 
-    @Autowired
-    private EmailService emailService;
+    private final MemberRepository memberRepository;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
-    @Autowired
-    private GroupsRepository groupsRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private MemberGroupRepository memberGroupRepository;
+    private final GroupsRepository groupsRepository;
 
-    public int saveValidMembers(List<MemberRowDTO> validRows, long groupId) {
+    private final MemberGroupRepository memberGroupRepository;
+
+    private final OrganizationRepository organizationRepository;
+
+    public MemberService(MemberRepository memberRepository, EmailService emailService, PasswordEncoder passwordEncoder,
+                         GroupsRepository groupsRepository, MemberGroupRepository memberGroupRepository, OrganizationRepository organizationRepository) {
+        this.memberRepository = memberRepository;
+        this.emailService = emailService;
+        this.passwordEncoder = passwordEncoder;
+        this.groupsRepository = groupsRepository;
+        this.memberGroupRepository = memberGroupRepository;
+        this.organizationRepository = organizationRepository;
+    }
+
+    public int saveValidMembers(List<MemberRowDTO> validRows, long groupId, Organization organization) {
         int count = 0;
         Groups group = groupsRepository.findById(groupId)
                 .orElseThrow(() -> new IllegalArgumentException("Group not found: ID " + groupId));
+
 
         for (MemberRowDTO dto :  validRows) {
             if (!memberRepository.existsByNic(dto.getNic()) && !memberRepository.existsByEmail(dto.getEmail())) {
@@ -46,6 +57,7 @@ public class MemberService {
                         .phone(dto.getPhone())
                         .regNo(dto.getRegNo())
                         .batch(dto.getBatch())
+                        .organization(organization)
                         .password(passwordEncoder.encode(rawPassword))
                         .build();
 

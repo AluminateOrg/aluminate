@@ -67,7 +67,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         logger.info("JwtAuthenticationFilter called for path: " + path);
 
 
-        if (!path.startsWith(apiPrefix + "/admin/") && !path.startsWith(apiPrefix + "/member/")) {
+        if (!path.startsWith(apiPrefix + "/admin/") && !path.startsWith(apiPrefix + "/member/") && !path.startsWith(apiPrefix + "/common/")) {
             logger.info("Skipping JWT authentication for non-admin/member path: " + path);
             filterChain.doFilter(request, response);
             return;
