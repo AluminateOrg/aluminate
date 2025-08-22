@@ -39,7 +39,7 @@ public class EventController {
     }
 
     // BOTH MEMBER AND ADMIN
-    @GetMapping({"/admin/event/get/all", "/member/event/get/all"})
+    @GetMapping({"/admin/event/get/all", "/member/event/get/all", "/common/event/get/all"})
     public ResponseEntity<ApiResponse> getAllEvents() {
         try {
             List<EventResponseDTO> events = eventService.getAllEvents();

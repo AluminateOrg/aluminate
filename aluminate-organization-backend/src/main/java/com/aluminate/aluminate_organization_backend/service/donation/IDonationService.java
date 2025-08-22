@@ -31,4 +31,7 @@ public interface IDonationService {
     Donation createDonation(DonationRequestDTO request);
     boolean processDonationCompletion(String orderId);
     boolean processDonationFailure(String orderId, String reason);
+
+    // NEW: Get donation by order ID
+    Donation getDonationByOrderId(String orderId);
 }

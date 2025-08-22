@@ -1,6 +1,7 @@
 package com.aluminate.aluminate_organization_backend.service.donation;
 
 import com.aluminate.aluminate_organization_backend.dto.donation.*;
+import com.aluminate.aluminate_organization_backend.exception.ResourceNotFoundException;
 import com.aluminate.aluminate_organization_backend.model.Campaign;
 import com.aluminate.aluminate_organization_backend.model.Donation;
 import com.aluminate.aluminate_organization_backend.model.Member;
@@ -8,6 +9,7 @@ import com.aluminate.aluminate_organization_backend.repository.CampaignRepositor
 import com.aluminate.aluminate_organization_backend.repository.DonationRepository;
 import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DonationService implements IDonationService {
@@ -46,7 +49,7 @@ public class DonationService implements IDonationService {
     @Override
     public DonationResponseDTO getDonationById(Long donationId) {
         Donation donation = donationRepository.findById(donationId)
-                .orElseThrow(() -> new IllegalArgumentException("Donation not found with id: " + donationId));
+                .orElseThrow(() -> new ResourceNotFoundException("Donation not found with id: " + donationId));
         return convertToResponseDTO(donation);
     }
 
@@ -62,7 +65,7 @@ public class DonationService implements IDonationService {
     @Transactional
     public DonationResponseDTO updateDonationStatus(Long donationId, String status) {
         Donation donation = donationRepository.findById(donationId)
-                .orElseThrow(() -> new IllegalArgumentException("Donation not found with id: " + donationId));
+                .orElseThrow(() -> new ResourceNotFoundException("Donation not found with id: " + donationId));
 
         donation.setStatus(status);
         donation.setUpdatedAt(LocalDateTime.now());
@@ -73,7 +76,7 @@ public class DonationService implements IDonationService {
     @Override
     public MemberDonationStatsDTO getDonationStatsByMember(Long memberId) {
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("Member not found with id: " + memberId));
+                .orElseThrow(() -> new ResourceNotFoundException("Member not found with id: " + memberId));
 
         List<Donation> donations = donationRepository.findByMemberId(memberId);
 
@@ -248,10 +251,10 @@ public class DonationService implements IDonationService {
     public Donation createDonation(DonationRequestDTO request) {
         Campaign campaign = campaignRepository.findById(request.getCampaignId())
                 .filter(c -> !c.isDeleted() && c.isActive())
-                .orElseThrow(() -> new IllegalArgumentException("Campaign not found or inactive"));
+                .orElseThrow(() -> new ResourceNotFoundException("Campaign not found or inactive"));
 
         Member member = memberRepository.findById(request.getMemberId())
-                .orElseThrow(() -> new IllegalArgumentException("Member not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Member not found"));
 
         if (request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Amount must be greater than zero");
@@ -306,6 +309,12 @@ public class DonationService implements IDonationService {
                     return true;
                 })
                 .orElse(false);
+    }
+
+    @Override
+    public Donation getDonationByOrderId(String orderId) {
+        return donationRepository.findByPaymentOrderId(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Donation not found for order: " + orderId));
     }
 
     private DonationResponseDTO convertToResponseDTO(Donation donation) {

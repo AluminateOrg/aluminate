@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("${api.prefix}/admin")
+@RequestMapping("${api.prefix}")
 public class OrganizationController {
 
     private final OrganizationService organizationService;
@@ -18,11 +18,10 @@ public class OrganizationController {
         this.organizationService = organizationService;
     }
 
-    @GetMapping("/get-org/{adminId}")
-    public ResponseEntity<GetOrgDTO> getOrganization(@PathVariable Long adminId) {
+    @GetMapping("/common/get-org")
+    public ResponseEntity<GetOrgDTO> getOrganization() {
         try {
-            System.out.println("Fetching organization for admin ID: " + adminId);
-            GetOrgDTO organization = organizationService.getOrg(adminId);
+            GetOrgDTO organization = organizationService.getOrg();
             System.out.println("Organization from the backend: " + organization);
             return ResponseEntity.ok(organization);
         } catch (Exception e) {
