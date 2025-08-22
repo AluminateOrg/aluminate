@@ -34,7 +34,7 @@ public class GroupController {
     }
 
     // BOTH ADMIN AND MEMBER
-    @GetMapping("/common/group/get/all")
+    @GetMapping({"/common/group/get/all", "/admin/group/get/all"})
     public ResponseEntity<ResponseWrapper<List<GroupResponseDTO>>> getAllGroups() {
         try {
             System.out.println("Fetching all groups");
