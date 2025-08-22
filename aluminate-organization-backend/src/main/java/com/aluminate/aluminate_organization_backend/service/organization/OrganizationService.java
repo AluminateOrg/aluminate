@@ -22,15 +22,16 @@ public class OrganizationService {
 
     // fetch the organization by admin id
     @Transactional(readOnly = true)
-    public GetOrgDTO getOrg(Long adminId) {
-        Organization organization = organizationRepository.findByAdminId(adminId);
+    public GetOrgDTO getOrg() {
+//        Organization organization = organizationRepository.findByAdminId(adminId);
+        Organization organization = organizationRepository.getFirstRow();
         if (organization == null) {
             throw new RuntimeException("Organization not found");
         }
 
         //get admin details
-        Admin admin = adminRepository.findById(adminId)
-                .orElseThrow(() -> new ObjectNotFoundException(adminId, "Admin not found"));
+//        Admin admin = adminRepository.findById(adminId)
+//                .orElseThrow(() -> new ObjectNotFoundException(adminId, "Admin not found"));
 
         return GetOrgDTO.builder()
                 .id(organization.getId())
