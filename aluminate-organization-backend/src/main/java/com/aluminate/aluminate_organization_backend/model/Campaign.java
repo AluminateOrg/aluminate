@@ -1,7 +1,7 @@
 package com.aluminate.aluminate_organization_backend.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -17,68 +17,114 @@ import java.util.Set;
 @Entity
 @Builder
 @EqualsAndHashCode(of = {"id"})
+@Table(name = "campaign")
 public class Campaign {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "Campaign title is required")
+    @Size(min = 3, max = 100, message = "Title must be between 3 and 100 characters")
+    @Column(nullable = false)
     private String title;
+
+    @Size(max = 1000, message = "Description cannot exceed 1000 characters")
     private String description;
 
+    @NotNull(message = "Campaign type is required")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, name = "type")
     private CampaignType type;
 
-    @Column(name = "target")
+    @NotNull(message = "Goal amount is required")
+    @DecimalMin(value = "100.0", message = "Goal must be at least LKR 100")
+    @DecimalMax(value = "10000000.0", message = "Goal cannot exceed LKR 10,000,000")
+    @Column(name = "target", precision = 15, scale = 2)
     private BigDecimal goal;
 
-    @Column(name = "current_amount")
     @Builder.Default
+    @Column(name = "current_amount", precision = 15, scale = 2)
     private BigDecimal raised = BigDecimal.ZERO;
 
+    @Builder.Default
     @Column(name = "start_date")
-    private LocalDate startDate;
+    private LocalDate startDate = LocalDate.now();
 
+    @NotNull(message = "End date is required")
+    @Future(message = "End date must be in the future")
     @Column(name = "end_date")
     private LocalDate endDate;
 
-    @Column(name = "total_donors")
     @Builder.Default
+    @Min(value = 0, message = "Donor count cannot be negative")
+    @Column(name = "total_donors")
     private int donorCount = 0;
 
-    @Column(name = "is_active")
     @Builder.Default
+    @Column(name = "is_active")
     private boolean isActive = true;
 
     @Builder.Default
+    @Column(name = "is_deleted")
     private boolean isDeleted = false;
+
+    @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    @Builder.Default
+    @Column(name = "created_at")
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "campaign", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
     private Set<Donation> donations = new HashSet<>();
 
-    // Utility method to add donation
+    // Lifecycle callbacks
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    // Utility methods
     public void addDonation(Donation donation) {
         donations.add(donation);
         donation.setCampaign(this);
     }
 
-    // Calculate progress percentage
     public double getProgressPercentage() {
         if (goal == null || goal.compareTo(BigDecimal.ZERO) == 0) {
             return 0.0;
         }
-        return raised.divide(goal, 4, BigDecimal.ROUND_HALF_UP).multiply(new BigDecimal(100)).doubleValue();
+        return raised.divide(goal, 4, BigDecimal.ROUND_HALF_UP)
+                .multiply(new BigDecimal(100)).doubleValue();
     }
 
-    // Check if campaign is expired
     public boolean isExpired() {
         return endDate != null && endDate.isBefore(LocalDate.now());
     }
 
-    // Check if campaign can accept donations
     public boolean canAcceptDonations() {
         return isActive && !isDeleted && !isExpired();
+    }
+
+    public BigDecimal getRemainingAmount() {
+        if (goal == null || raised == null) return BigDecimal.ZERO;
+        BigDecimal remaining = goal.subtract(raised);
+        return remaining.compareTo(BigDecimal.ZERO) > 0 ? remaining : BigDecimal.ZERO;
+    }
+
+    public boolean isGoalAchieved() {
+        if (goal == null || raised == null) return false;
+        return raised.compareTo(goal) >= 0;
+    }
+
+    public long getDaysRemaining() {
+        if (endDate == null) return 0;
+        LocalDate now = LocalDate.now();
+        if (endDate.isBefore(now)) return 0;
+        return java.time.temporal.ChronoUnit.DAYS.between(now, endDate);
     }
 }
