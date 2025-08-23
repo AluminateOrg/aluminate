@@ -12,6 +12,7 @@ import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -330,6 +331,42 @@ public class EventService implements IEventService{
                 .toList();
     }
 
+    @Override
+    public byte[] exportEventAttendeesCsv(Long eventId) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new ResourceNotFoundException("Event not found with id: " + eventId));
+
+        // Only include attendees currently marked as attending
+        List<MemberEvent> links = memberEventRepository.findAllByEvent_IdAndIsAttendingTrue(eventId);
+
+        StringBuilder sb = new StringBuilder();
+        // CSV header (extend with any fields you have on Member)
+        sb.append("EventId,EventTitle,MemberId,MemberName,MemberEmail,RSVP,Attending\n");
+
+        for (MemberEvent me : links) {
+            Member m = me.getMember();
+            String name = m != null ? safeCsv(m.getName()) : "";
+            String email = m != null ? safeCsv(m.getEmail()) : "";
+
+            sb.append(event.getId()).append(',')
+                    .append(safeCsv(event.getTitle())).append(',')
+                    .append(m != null ? m.getId() : "").append(',')
+                    .append(name).append(',')
+                    .append(email).append(',')
+                    .append(me.isSetRSVP()).append(',')
+                    .append(me.isAttending()).append('\n');
+        }
+
+        return sb.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    private static String safeCsv(String value) {
+        if (value == null) return "";
+        // Escape quotes by doubling, wrap in quotes if contains comma, quote, or newline
+        boolean needsQuotes = value.contains(",") || value.contains("\"") || value.contains("\n") || value.contains("\r");
+        String escaped = value.replace("\"", "\"\"");
+        return needsQuotes ? "\"" + escaped + "\"" : escaped;
+    }
 
 
 }

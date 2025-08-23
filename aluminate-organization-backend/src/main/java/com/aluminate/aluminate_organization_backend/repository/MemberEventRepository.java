@@ -15,4 +15,7 @@ public interface MemberEventRepository extends JpaRepository<MemberEvent, Long> 
     List<MemberEvent> findAllByMemberIdAndAttendingTrue(Long memberId);
 
     List<MemberEvent> findAllByEventId(Long eventId);
+
+    List<MemberEvent> findAllByEvent_IdAndIsAttendingTrue(Long eventId);
+
 }

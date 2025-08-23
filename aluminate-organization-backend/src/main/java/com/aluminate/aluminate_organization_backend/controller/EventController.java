@@ -7,9 +7,13 @@ import com.aluminate.aluminate_organization_backend.exception.ResourceNotFoundEx
 import com.aluminate.aluminate_organization_backend.model.Event;
 import com.aluminate.aluminate_organization_backend.service.event.IEventService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.springframework.http.HttpStatus.*;
@@ -195,6 +199,31 @@ public class EventController {
             return ResponseEntity.status(NOT_FOUND).body(new ApiResponse(e.getMessage(), null));
         } catch (Exception e) {
             return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(new ApiResponse("Failed to retrieve attendance statuses", null));
+        }
+    }
+
+    // ADMIN ONLY: export attendees of an event as CSV
+    @GetMapping("/admin/event/{eventId}/attendees/export")
+    public ResponseEntity<byte[]> exportEventAttendees(@PathVariable Long eventId) {
+        try {
+            byte[] csv = eventService.exportEventAttendeesCsv(eventId);
+
+            String filename = "event_" + eventId + "_attendees.csv";
+            String contentDisposition = "attachment; filename=\"" + filename + "\"; filename*=UTF-8''" +
+                    URLEncoder.encode(filename, StandardCharsets.UTF_8);
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
+                    .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
+                    .body(csv);
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(NOT_FOUND)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(("Event not found").getBytes(StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(("Failed to export attendees").getBytes(StandardCharsets.UTF_8));
         }
     }
 

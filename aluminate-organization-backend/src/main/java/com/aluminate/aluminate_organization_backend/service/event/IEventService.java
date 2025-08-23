@@ -20,6 +20,7 @@ public interface IEventService {
     List<EventResponseDTO> getMemberAttendances(Long memberId);
 
     List<EventAttendanceStatusDTO> getMemberEventAttendanceStatuses(Long memberId);
+    byte[] exportEventAttendeesCsv(Long eventId);
 
 
 }
