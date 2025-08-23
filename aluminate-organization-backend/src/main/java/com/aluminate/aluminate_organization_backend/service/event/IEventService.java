@@ -1,9 +1,6 @@
 package com.aluminate.aluminate_organization_backend.service.event;
 
-import com.aluminate.aluminate_organization_backend.dto.event.CreateEventRequest;
-import com.aluminate.aluminate_organization_backend.dto.event.EventAttendanceStatusDTO;
-import com.aluminate.aluminate_organization_backend.dto.event.EventResponseDTO;
-import com.aluminate.aluminate_organization_backend.dto.event.MemberAttendanceDTO;
+import com.aluminate.aluminate_organization_backend.dto.event.*;
 import com.aluminate.aluminate_organization_backend.model.Event;
 
 import java.util.List;
@@ -17,6 +14,7 @@ public interface IEventService {
     EventResponseDTO attendEvent(Long eventId, Long memberId);
     EventResponseDTO unattendEvent(Long eventId, Long memberId);
 
+    EventResponseDTO updateEvent(Long id, UpdateEventRequest request);
 
     List<MemberAttendanceDTO> getEventAttendance(Long eventId);
     List<EventResponseDTO> getMemberAttendances(Long memberId);

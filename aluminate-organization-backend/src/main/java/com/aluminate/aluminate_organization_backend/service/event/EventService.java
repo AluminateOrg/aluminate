@@ -1,9 +1,6 @@
 package com.aluminate.aluminate_organization_backend.service.event;
 
-import com.aluminate.aluminate_organization_backend.dto.event.CreateEventRequest;
-import com.aluminate.aluminate_organization_backend.dto.event.EventAttendanceStatusDTO;
-import com.aluminate.aluminate_organization_backend.dto.event.EventResponseDTO;
-import com.aluminate.aluminate_organization_backend.dto.event.MemberAttendanceDTO;
+import com.aluminate.aluminate_organization_backend.dto.event.*;
 import com.aluminate.aluminate_organization_backend.exception.ResourceNotFoundException;
 import com.aluminate.aluminate_organization_backend.model.Event;
 import com.aluminate.aluminate_organization_backend.model.EventStatus;
@@ -61,6 +58,49 @@ public class EventService implements IEventService{
 
         return eventRepository.save(event);
     }
+
+    @Override
+    @Transactional
+    public EventResponseDTO updateEvent(Long id, UpdateEventRequest request) {
+        Event event = eventRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Event not found with id: " + id));
+
+        if (event.isDeleted()) {
+            throw new IllegalStateException("Cannot edit a deleted event");
+        }
+
+        // Enforce unique title for not-deleted events (excluding this one)
+        if (request.getTitle() != null
+                && !request.getTitle().equals(event.getTitle())
+                && eventRepository.existsByTitleAndIsDeletedFalseAndIdNot(request.getTitle(), id)) {
+            throw new IllegalArgumentException("Another active event with this title already exists");
+        }
+
+        // Capacity constraint: new maxParticipants must be >= currentParticipants
+        if (request.getMaxParticipants() != null
+                && request.getMaxParticipants() < event.getCurrentParticipants()) {
+            throw new IllegalStateException("maxParticipants cannot be less than currentParticipants");
+        }
+
+        // Apply updates (only if provided)
+        if (request.getTitle() != null) event.setTitle(request.getTitle());
+        if (request.getDescription() != null) event.setDescription(request.getDescription());
+        if (request.getType() != null) event.setType(request.getType());
+        if (request.getLocation() != null) event.setLocation(request.getLocation());
+        if (request.getStartDate() != null) event.setStartDate(request.getStartDate());
+        if (request.getEndDate() != null) event.setEndDate(request.getEndDate());
+        if (request.getStartTime() != null) event.setStartTime(request.getStartTime());
+        if (request.getEndTime() != null) event.setEndTime(request.getEndTime());
+        if (request.getMaxParticipants() != null) event.setMaxParticipants(request.getMaxParticipants());
+        if (request.getRegistrationDeadline() != null) event.setRegistrationDeadline(request.getRegistrationDeadline());
+        if (request.getPrice() != null) event.setPrice(request.getPrice());
+        if (request.getIsPublic() != null) event.setPublic(request.getIsPublic());
+        if (request.getRequiresApproval() != null) event.setRequiresApproval(request.getRequiresApproval());
+
+        Event saved = eventRepository.save(event);
+        return convertToDTO(saved);
+    }
+
 
     @Override
     public List<EventResponseDTO> getAllEvents() {

@@ -1,10 +1,7 @@
 package com.aluminate.aluminate_organization_backend.controller;
 
 
-import com.aluminate.aluminate_organization_backend.dto.event.CreateEventRequest;
-import com.aluminate.aluminate_organization_backend.dto.event.EventAttendanceStatusDTO;
-import com.aluminate.aluminate_organization_backend.dto.event.EventResponseDTO;
-import com.aluminate.aluminate_organization_backend.dto.event.MemberAttendanceDTO;
+import com.aluminate.aluminate_organization_backend.dto.event.*;
 import com.aluminate.aluminate_organization_backend.dto.response.ApiResponse;
 import com.aluminate.aluminate_organization_backend.exception.ResourceNotFoundException;
 import com.aluminate.aluminate_organization_backend.model.Event;
@@ -37,6 +34,21 @@ public class EventController {
             return ResponseEntity
                     .status(INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse("Failed to create event", null));
+        }
+    }
+
+    // ADMIN ONLY: edit event (partial update)
+    @PutMapping("/admin/event/{id}/edit")
+    public ResponseEntity<ApiResponse> updateEvent(@PathVariable Long id, @RequestBody UpdateEventRequest request) {
+        try {
+            EventResponseDTO updated = eventService.updateEvent(id, request);
+            return ResponseEntity.ok(new ApiResponse("Event updated successfully", updated));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(NOT_FOUND).body(new ApiResponse(e.getMessage(), null));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.status(CONFLICT).body(new ApiResponse(e.getMessage(), null));
+        } catch (Exception e) {
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(new ApiResponse("Failed to update event", null));
         }
     }
 
