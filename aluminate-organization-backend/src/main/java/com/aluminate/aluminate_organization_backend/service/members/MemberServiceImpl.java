@@ -1,6 +1,7 @@
 package com.aluminate.aluminate_organization_backend.service.members;
 
 import com.aluminate.aluminate_organization_backend.dto.MemberRequestDTO;
+import com.aluminate.aluminate_organization_backend.dto.MemberResponseDTO;
 import com.aluminate.aluminate_organization_backend.dto.group.GroupMembershipStatusDTO;
 import com.aluminate.aluminate_organization_backend.exception.ResourceNotFoundException;
 import com.aluminate.aluminate_organization_backend.model.Groups;
@@ -12,8 +13,13 @@ import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
 import com.aluminate.aluminate_organization_backend.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,16 +29,17 @@ public class MemberServiceImpl implements IMemberService {
 
     private final MemberRepository memberRepository;
     private final MemberGroupRepository memberGroupRepository;
-    private final GroupsRepository groupRepository; // ✅ Add this
+    private final GroupsRepository groupRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
     @Autowired
     private EmailService emailService;
 
+    // ---------------- Existing functionality ----------------
+
     @Override
     public Member createMember(MemberRequestDTO dto) {
-        // Save the member
         String rawPassword = dto.getPassword();
         Member member = Member.builder()
                 .name(dto.getName())
@@ -46,6 +53,7 @@ public class MemberServiceImpl implements IMemberService {
                 .build();
 
         Member savedMember = memberRepository.save(member);
+
         // send welcome email
         emailService.sendEmail(dto.getEmail(), dto.getName(), dto.getNic());
 
@@ -82,13 +90,9 @@ public class MemberServiceImpl implements IMemberService {
                 .map(memberGroup -> {
                     GroupMembershipStatusDTO statusDTO = new GroupMembershipStatusDTO();
                     statusDTO.setGroupId(memberGroup.getGroup().getId());
-
-                    if (memberGroup.getRequestStatus() == null) {
-                        statusDTO.setStatus("not_member");
-                    } else {
-                        statusDTO.setStatus(memberGroup.getRequestStatus().toString().toLowerCase());
-                    }
-
+                    statusDTO.setStatus(memberGroup.getRequestStatus() == null
+                            ? "not_member"
+                            : memberGroup.getRequestStatus().toString().toLowerCase());
                     return statusDTO;
                 })
                 .collect(Collectors.toList());
@@ -98,9 +102,99 @@ public class MemberServiceImpl implements IMemberService {
     public void deactivateMember(Long id) {
         Member member = memberRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Member not found with ID: " + id));
-
         member.setActive(false);
         memberRepository.save(member);
     }
 
+    // ---------------- New: self-profile functionality ----------------
+
+    @Override
+    public MemberResponseDTO getMyProfile() {
+        return toResponseDto(getCurrentMemberOrThrow());
+    }
+
+    @Override
+    @Transactional
+    public MemberResponseDTO putMyProfile(MemberRequestDTO req) {
+        Member me = getCurrentMemberOrThrow();
+
+        // Full replace of editable fields (keep core identifiers immutable)
+        if (!StringUtils.hasText(req.getName())) {
+            throw new IllegalArgumentException("Name is required");
+        }
+        me.setName(req.getName());
+        me.setPhone(req.getPhone());
+        me.setAddress(req.getAddress());
+
+        memberRepository.save(me);
+        return toResponseDto(me);
+    }
+
+    @Override
+    @Transactional
+    public MemberResponseDTO patchMyProfile(MemberRequestDTO req) {
+        Member me = getCurrentMemberOrThrow();
+
+        if (req.getName() != null) me.setName(req.getName());
+        if (req.getPhone() != null) me.setPhone(req.getPhone());
+        if (req.getAddress() != null) me.setAddress(req.getAddress());
+
+        memberRepository.save(me);
+        return toResponseDto(me);
+    }
+
+    @Override
+    @Transactional
+    public void setMyAvatarUrl(String url) {
+        Member me = getCurrentMemberOrThrow();
+        me.setPhotoUrl(url);           // direct setter - your entity has photoUrl
+        memberRepository.save(me);
+    }
+
+    // ---------------- Helpers ----------------
+
+    private Member getCurrentMemberOrThrow() {
+        String email = currentUserEmail();
+        if (!StringUtils.hasText(email)) {
+            throw new ResourceNotFoundException("Authenticated user not found");
+        }
+        return memberRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Member not found for email: " + email));
+    }
+
+    private String currentUserEmail() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) return null;
+        Object principal = auth.getPrincipal();
+        if (principal instanceof org.springframework.security.core.userdetails.User u) {
+            return u.getUsername(); // commonly the email
+        }
+        return auth.getName();
+    }
+
+    private MemberResponseDTO toResponseDto(Member m) {
+        List<Long> groupIds = memberGroupRepository.findByMember(m).stream()
+                .map(mg -> mg.getGroup().getId())
+                .collect(Collectors.toList());
+
+        return MemberResponseDTO.builder()
+                .name(m.getName())
+                .nic(m.getNic())
+                .is_active(m.isActive())
+                .phone(m.getPhone())
+                .email(m.getEmail())
+                .regNo(m.getRegNo())
+                .address(m.getAddress())
+                .photoUrl(m.getPhotoUrl())
+                .degree(m.getDegree())
+                .company(m.getCompany())
+                .position(m.getPosition())
+                .linkedinUrl(m.getLinkedinUrl())
+                .githubUrl(m.getGithubUrl())
+                .websiteUrl(m.getWebsiteUrl())
+                .batch(m.getBatch())
+                .groupIds(groupIds)
+                .password(null) // NEVER expose password
+                .build();
+    }
 }
