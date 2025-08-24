@@ -13,7 +13,10 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     boolean existsByEmail(String email);
 
     Optional<Member> findByEmail(String email);
-
+    Optional<Member> findByRegNo(String regNo);
+    Optional<Member> findByNic(String nic);
+    Optional<Member> findByPublicSlug(String publicSlug);      // NEW
+    boolean existsByPublicSlug(String publicSlug);
     @Query("SELECT m.email FROM Member m WHERE m.email IS NOT NULL ")
     List<String> findAllEmails();
     List<Member> findByOrganizationIsNull();

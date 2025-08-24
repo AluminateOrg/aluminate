@@ -23,6 +23,10 @@ public class MemberResponseDTO {
     private String linkedinUrl;
     private String githubUrl;
     private String websiteUrl;
+    private String publicSlug;
+    private Boolean publicProfileEnabled;
+    private String avatarUrl;
+
     private int batch;
     private List<Long> groupIds;
 }

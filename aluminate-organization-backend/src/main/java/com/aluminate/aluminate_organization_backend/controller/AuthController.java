@@ -117,4 +117,31 @@ package com.aluminate.aluminate_organization_backend.controller;
         return ResponseEntity.ok(new ResponseWrapper<>(true, "Logout successful", null));
     }
 
+    // in AuthController
+    @PostMapping("/login/plain")
+    public ResponseEntity<ResponseWrapper<LoginResponse>> loginPlain(
+            @Valid @RequestBody LoginRequest req,
+            HttpServletResponse httpResponse) {
+        try {
+            if (req.getEmail() == null || req.getPassword() == null) {
+                return ResponseEntity.badRequest()
+                        .body(new ResponseWrapper<>(false, "email and password required", null));
+            }
+
+            // Reuse your real login (validates creds, builds JWT inside LoginResponse)
+            LoginResponse response = authService.login(req.getEmail(), req.getPassword());
+
+            // Set cookies exactly like your normal flow (jwt + csrf-token + sessionId)
+            authService.setAuthCookies(httpResponse, response.getToken());
+
+            // IMPORTANT: DO NOT null the token here — we need it visible in Postman
+            // response.setToken(null);  // <-- leave commented out for Postman testing
+
+            return ResponseEntity.ok(new ResponseWrapper<>(true, "Login successful", response));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(new ResponseWrapper<>(false, e.getMessage(), null));
+        }
     }
+
+}
