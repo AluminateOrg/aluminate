@@ -37,6 +37,8 @@ public class MentorService {
         Member member = memberRepository.findById(request.getMemberId())
                 .orElseThrow(() -> new RuntimeException("Member not found"));
 
+        System.out.println("Member details: " + member);
+
         if (mentorRepository.existsByMember(member)) throw  new RuntimeException("Member already exists");
 
         Mentor mentor =  Mentor.builder()

@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("${api.prefix}/user/mentor")
+@RequestMapping("${api.prefix}")
 public class MentorController {
 
 
@@ -20,9 +20,10 @@ public class MentorController {
         this.mentorService = mentorService;
     }
 
-    @PostMapping("/apply")
+    @PostMapping("/member/mentor/apply")
     public ResponseEntity<?> applyAsMentor(@RequestBody MentorRequestDTO request) {
         try {
+            System.out.println("Received mentor application request: " + request);
             MentorResponseDTO responseDTO = mentorService.applyAsMentor(request);
 
             Map<String, Object> response = new HashMap<>();
@@ -38,7 +39,7 @@ public class MentorController {
     }
 
     //get all mentors request
-    @GetMapping("/get-all-unapproved")
+    @GetMapping("/admin/mentor/get-all-unapproved")
     public ResponseEntity<List<MentorApplicationDTO>> getAllUnapprovedMentors() {
         try {
             List<MentorApplicationDTO> mentors = mentorService.getAllUnapprovedMentors();
@@ -71,7 +72,7 @@ public class MentorController {
         }
     }
 
-    @GetMapping("/get-all-approved")
+    @GetMapping({"/admin/mentor/get-all-approved", "/member/mentor/get-all-approved"})
     public ResponseEntity<List<MentorApplicationDTO>> getAllApprovedMentors() {
         try {
             List<MentorApplicationDTO> mentors = mentorService.getAllApprovedMentors();
