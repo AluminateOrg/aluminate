@@ -98,4 +98,54 @@ public class ProfileController {
                     .body(new ApiResponse("Failed to update avatar.", null));
         }
     }
+
+    // inside ProfileController (it already has @RequestMapping("${api.prefix}"))
+// keep the existing imports; add PublicMemberProfileDTO import if needed
+
+    // PUBLIC READ (no auth) — used by QR scans
+    @GetMapping("/public/profile/{slug}")
+    public ResponseEntity<ApiResponse> getPublicProfileBySlug(@PathVariable String slug) {
+        log.info("GET /public/profile/{} invoked", slug);
+        try {
+            var dto = memberService.getPublicProfileBySlug(slug); // sanitized DTO
+            return ResponseEntity.ok(new ApiResponse("OK", dto));
+        } catch (ResourceNotFoundException rnfe) {
+            log.warn("Public profile not found: {}", rnfe.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse(rnfe.getMessage(), null));
+        } catch (Exception e) {
+            log.error("getPublicProfileBySlug failed", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse("Failed to load public profile.", null));
+        }
+    }
+
+    // MEMBER (auth) — enable or regenerate the share link (slug)
+    @PostMapping({"/member/profile/share-link", "/admin/profile/share-link"})
+    public ResponseEntity<ApiResponse> enableOrRegenerateShareLink(
+            @RequestParam(name = "regenerate", defaultValue = "false") boolean regenerate) {
+        try {
+            var dto = regenerate ? memberService.regenerateShareLink()
+                    : memberService.enableShareLink();
+            return ResponseEntity.ok(new ApiResponse("Share link ready", dto));
+        } catch (Exception e) {
+            log.error("share-link failed", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse("Failed to setup share link.", null));
+        }
+    }
+
+    // MEMBER (auth) — disable the share link
+    @DeleteMapping({"/member/profile/share-link", "/admin/profile/share-link"})
+    public ResponseEntity<ApiResponse> disableShareLink() {
+        try {
+            memberService.disableShareLink();
+            return ResponseEntity.ok(new ApiResponse("Share link disabled", null));
+        } catch (Exception e) {
+            log.error("disable share-link failed", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse("Failed to disable share link.", null));
+        }
+    }
+
 }

@@ -13,6 +13,11 @@ import com.aluminate.aluminate_organization_backend.repository.MemberGroupReposi
 import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
 import com.aluminate.aluminate_organization_backend.repository.OrganizationRepository;
 import com.aluminate.aluminate_organization_backend.service.EmailService;
+
+import com.aluminate.aluminate_organization_backend.config.util.Jwt;
+
+import com.aluminate.aluminate_organization_backend.dto.PublicMemberProfileDTO;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -24,10 +29,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
+
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 
-import com.aluminate.aluminate_organization_backend.config.util.Jwt;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -41,6 +46,7 @@ public class MemberServiceImpl implements IMemberService {
     private final GroupsRepository groupRepository;
     private final OrganizationRepository organizationRepository;
     private final Jwt jwtUtil;
+
     @Autowired
     private PasswordEncoder passwordEncoder;
     @Autowired
@@ -48,10 +54,8 @@ public class MemberServiceImpl implements IMemberService {
 
     @Override
     public Member createMember(MemberRequestDTO dto) {
-        // Save the member
         String rawPassword = dto.getPassword();
 
-        //get the organization by id
         Organization organization = organizationRepository.findById(dto.getOrganizationId())
                 .orElseThrow(() -> new IllegalArgumentException("Organization not found: ID " + dto.getOrganizationId()));
 
@@ -68,10 +72,9 @@ public class MemberServiceImpl implements IMemberService {
                 .build();
 
         Member savedMember = memberRepository.save(member);
-        //send welcome email
+
         emailService.sendEmail(dto.getEmail(), dto.getName(), dto.getNic());
 
-        // Link member to groups
         for (Long groupId : dto.getGroupIds()) {
             Groups group = groupRepository.findById(groupId)
                     .orElseThrow(() -> new IllegalArgumentException("Group not found: ID " + groupId));
@@ -81,10 +84,8 @@ public class MemberServiceImpl implements IMemberService {
             memberGroup.setGroup(group);
             memberGroup.setApproved(true);
             memberGroup.setRole("MEMBER");
-
             memberGroupRepository.save(memberGroup);
         }
-
         return savedMember;
     }
 
@@ -104,13 +105,11 @@ public class MemberServiceImpl implements IMemberService {
                 .map(memberGroup -> {
                     GroupMembershipStatusDTO statusDTO = new GroupMembershipStatusDTO();
                     statusDTO.setGroupId(memberGroup.getGroup().getId());
-
                     if (memberGroup.getRequestStatus() == null) {
                         statusDTO.setStatus("not_member");
                     } else {
                         statusDTO.setStatus(memberGroup.getRequestStatus().toString().toLowerCase());
                     }
-
                     return statusDTO;
                 })
                 .collect(Collectors.toList());
@@ -137,7 +136,6 @@ public class MemberServiceImpl implements IMemberService {
     public MemberResponseDTO putMyProfile(MemberRequestDTO req) {
         Member me = getCurrentMemberOrThrow();
 
-        // Full replace of editable fields (keep core identifiers immutable)
         if (!StringUtils.hasText(req.getName())) {
             throw new IllegalArgumentException("Name is required");
         }
@@ -151,8 +149,7 @@ public class MemberServiceImpl implements IMemberService {
         me.setGithubUrl(req.getGithubUrl());
         me.setWebsiteUrl(req.getWebsiteUrl());
         me.setBatch(req.getBatch());
-        // add more fields you allow full replace for if needed:
-        // me.setCompany(req.getCompany()); me.setPosition(req.getPosition()); etc.
+        // photo/avatar is handled separately
 
         memberRepository.save(me);
         return toResponseDto(me);
@@ -166,7 +163,6 @@ public class MemberServiceImpl implements IMemberService {
         if (req.getName() != null) me.setName(req.getName());
         if (req.getPhone() != null) me.setPhone(req.getPhone());
         if (req.getAddress() != null) me.setAddress(req.getAddress());
-        // other optional fields:
         if (req.getCompany() != null) me.setCompany(req.getCompany());
         if (req.getPosition() != null) me.setPosition(req.getPosition());
         if (req.getDegree() != null) me.setDegree(req.getDegree());
@@ -190,6 +186,67 @@ public class MemberServiceImpl implements IMemberService {
         memberRepository.save(me);
     }
 
+    // ---------------- Shareable public profile (QR link) ----------------
+
+    @Override
+    @Transactional
+    public MemberResponseDTO enableShareLink() {
+        Member me = getCurrentMemberOrThrow();
+        if (!StringUtils.hasText(me.getPublicSlug())) {
+            me.setPublicSlug(generateUniqueSlug());
+        }
+        me.setPublicProfileEnabled(true);
+        memberRepository.save(me);
+        return toResponseDto(me);
+    }
+
+    @Override
+    @Transactional
+    public MemberResponseDTO regenerateShareLink() {
+        Member me = getCurrentMemberOrThrow();
+        me.setPublicSlug(generateUniqueSlug());
+        me.setPublicProfileEnabled(true);
+        memberRepository.save(me);
+        return toResponseDto(me);
+    }
+
+    @Override
+    @Transactional
+    public void disableShareLink() {
+        Member me = getCurrentMemberOrThrow();
+        me.setPublicProfileEnabled(false);
+        memberRepository.save(me);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PublicMemberProfileDTO getPublicProfileBySlug(String slug) {
+        Member m = memberRepository.findByPublicSlug(slug)
+                .orElseThrow(() -> new ResourceNotFoundException("Profile not found"));
+        if (!Boolean.TRUE.equals(m.getPublicProfileEnabled())) {
+            throw new ResourceNotFoundException("Profile not public");
+        }
+        return PublicMemberProfileDTO.builder()
+                .name(m.getName())
+                .position(m.getPosition())
+                .company(m.getCompany())
+                .batch(m.getBatch())
+                .degree(m.getDegree())
+                .linkedinUrl(m.getLinkedinUrl())
+                .githubUrl(m.getGithubUrl())
+                .websiteUrl(m.getWebsiteUrl())
+                .photoUrl(m.getPhotoUrl())
+                .build();
+    }
+
+    private String generateUniqueSlug() {
+        String slug;
+        do {
+            slug = java.util.UUID.randomUUID().toString().replace("-", "");
+        } while (memberRepository.existsByPublicSlug(slug));
+        return slug;
+    }
+
     // ---------------- Helpers (profile only) ----------------
 
     private Member getCurrentMemberOrThrow() {
@@ -197,7 +254,6 @@ public class MemberServiceImpl implements IMemberService {
         if (!StringUtils.hasText(email)) {
             throw new ResourceNotFoundException("Authenticated user not found");
         }
-
         return memberRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Member not found for email: " + email));
     }
@@ -209,20 +265,15 @@ public class MemberServiceImpl implements IMemberService {
         if (auth != null && auth.isAuthenticated()) {
             Object principal = auth.getPrincipal();
 
-            // 1) If principal implements UserDetails (some setups)
             if (principal instanceof org.springframework.security.core.userdetails.User ud) {
                 if (StringUtils.hasText(ud.getUsername())) return ud.getUsername();
             }
-
-            // 2) If principal is your domain Member/Admin, try direct/getEmail via reflection
             try {
                 if (principal != null) {
-                    // try getEmail()
                     var m = principal.getClass().getMethod("getEmail");
                     Object v = m.invoke(principal);
                     if (v instanceof String s && StringUtils.hasText(s)) return s;
 
-                    // try getUsername() if provided
                     var u = principal.getClass().getMethod("getUsername");
                     Object vv = u.invoke(principal);
                     if (vv instanceof String s2 && StringUtils.hasText(s2)) return s2;
@@ -230,12 +281,8 @@ public class MemberServiceImpl implements IMemberService {
             } catch (NoSuchMethodException ignored) {
             } catch (Exception ignored) {
             }
-
-            // 3) Fallback to auth.getName()
             if (StringUtils.hasText(auth.getName())) return auth.getName();
         }
-
-        // 4) FINAL FALLBACK: parse JWT cookie directly (no change to the filter)
         return emailFromJwtCookie();
     }
 
@@ -255,7 +302,6 @@ public class MemberServiceImpl implements IMemberService {
             }
             if (!StringUtils.hasText(token)) return null;
 
-            // Use your existing Jwt util to extract the email claim
             var claims = jwtUtil.extractAllClaims(token);
             return claims.get("email", String.class);
         } catch (Exception e) {
@@ -287,7 +333,12 @@ public class MemberServiceImpl implements IMemberService {
                 .websiteUrl(m.getWebsiteUrl())
                 .batch(m.getBatch())
                 .groupIds(groupIds)
-                .password(null)             // NEVER expose password
+                // NEW: fields the frontend QR page can read
+                .publicSlug(m.getPublicSlug())
+                .publicProfileEnabled(Boolean.TRUE.equals(m.getPublicProfileEnabled()))
+                // Optional convenience mapping if your FE expects avatarUrl
+                .avatarUrl(m.getPhotoUrl())
+                .password(null) // never expose
                 .build();
     }
 }

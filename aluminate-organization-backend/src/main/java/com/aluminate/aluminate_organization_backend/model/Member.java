@@ -38,6 +38,8 @@ public class Member extends GlobalUser implements UserDetails {
     private String linkedinUrl;
     private String githubUrl;
     private String websiteUrl;
+    private String publicSlug;
+    private Boolean publicProfileEnabled = false;
     private int batch;
     @Builder.Default
     private boolean isActive = true;

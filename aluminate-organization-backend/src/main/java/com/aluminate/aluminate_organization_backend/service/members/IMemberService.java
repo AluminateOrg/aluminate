@@ -22,4 +22,10 @@ public interface IMemberService {
     MemberResponseDTO putMyProfile(MemberRequestDTO req);
     MemberResponseDTO patchMyProfile(MemberRequestDTO req);
     void setMyAvatarUrl(String url);
+    // add to your interface
+    MemberResponseDTO enableShareLink();
+    MemberResponseDTO regenerateShareLink();
+    void disableShareLink();
+    com.aluminate.aluminate_organization_backend.dto.PublicMemberProfileDTO getPublicProfileBySlug(String slug);
+
 }
