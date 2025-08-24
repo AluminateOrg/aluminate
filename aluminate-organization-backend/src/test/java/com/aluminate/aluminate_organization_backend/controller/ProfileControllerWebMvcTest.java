@@ -151,7 +151,7 @@ class ProfileControllerWebMvcTest {
           }
         """;
 
-        mockMvc.perform(put("/api/v1/member/member/profile")
+        mockMvc.perform(put("/api/v1/member/profile")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isOk())
@@ -171,7 +171,7 @@ class ProfileControllerWebMvcTest {
           }
         """;
 
-        mockMvc.perform(patch("/api/v1/member/member/profile")
+        mockMvc.perform(patch("/api/v1/member/profile")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isOk())
@@ -185,7 +185,7 @@ class ProfileControllerWebMvcTest {
         doNothing().when(memberService).setMyAvatarUrl(anyString());
         given(memberService.getMyProfile()).willReturn(sampleProfileAfterAvatarSet());
 
-        mockMvc.perform(post("/api/v1/member/member/profile/avatar-url")
+        mockMvc.perform(post("/api/v1/member/profile/avatar-url")
                         .param("url", "https://cdn.example.com/avatar.png"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message", containsString("Avatar updated")))

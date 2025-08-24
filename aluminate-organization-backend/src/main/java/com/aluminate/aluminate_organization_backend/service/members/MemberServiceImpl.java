@@ -17,11 +17,18 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 
+import com.aluminate.aluminate_organization_backend.config.util.Jwt;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,7 +40,7 @@ public class MemberServiceImpl implements IMemberService {
     private final MemberGroupRepository memberGroupRepository;
     private final GroupsRepository groupRepository;
     private final OrganizationRepository organizationRepository;
-
+    private final Jwt jwtUtil;
     @Autowired
     private PasswordEncoder passwordEncoder;
     @Autowired
@@ -117,9 +124,10 @@ public class MemberServiceImpl implements IMemberService {
         memberRepository.save(member);
     }
 
-    // ---------------- New: self-profile functionality ----------------
+    // ---------------- Profile: self-profile functionality ----------------
 
     @Override
+    @Transactional(readOnly = true)
     public MemberResponseDTO getMyProfile() {
         return toResponseDto(getCurrentMemberOrThrow());
     }
@@ -136,6 +144,15 @@ public class MemberServiceImpl implements IMemberService {
         me.setName(req.getName());
         me.setPhone(req.getPhone());
         me.setAddress(req.getAddress());
+        me.setCompany(req.getCompany());
+        me.setPosition(req.getPosition());
+        me.setDegree(req.getDegree());
+        me.setLinkedinUrl(req.getLinkedinUrl());
+        me.setGithubUrl(req.getGithubUrl());
+        me.setWebsiteUrl(req.getWebsiteUrl());
+        me.setBatch(req.getBatch());
+        // add more fields you allow full replace for if needed:
+        // me.setCompany(req.getCompany()); me.setPosition(req.getPosition()); etc.
 
         memberRepository.save(me);
         return toResponseDto(me);
@@ -149,6 +166,14 @@ public class MemberServiceImpl implements IMemberService {
         if (req.getName() != null) me.setName(req.getName());
         if (req.getPhone() != null) me.setPhone(req.getPhone());
         if (req.getAddress() != null) me.setAddress(req.getAddress());
+        // other optional fields:
+        if (req.getCompany() != null) me.setCompany(req.getCompany());
+        if (req.getPosition() != null) me.setPosition(req.getPosition());
+        if (req.getDegree() != null) me.setDegree(req.getDegree());
+        if (req.getLinkedinUrl() != null) me.setLinkedinUrl(req.getLinkedinUrl());
+        if (req.getGithubUrl() != null) me.setGithubUrl(req.getGithubUrl());
+        if (req.getWebsiteUrl() != null) me.setWebsiteUrl(req.getWebsiteUrl());
+        if (req.getPhotoUrl() != null) me.setPhotoUrl(req.getPhotoUrl());
 
         memberRepository.save(me);
         return toResponseDto(me);
@@ -157,34 +182,91 @@ public class MemberServiceImpl implements IMemberService {
     @Override
     @Transactional
     public void setMyAvatarUrl(String url) {
+        if (!StringUtils.hasText(url)) {
+            throw new IllegalArgumentException("Avatar URL must not be empty");
+        }
         Member me = getCurrentMemberOrThrow();
-        me.setPhotoUrl(url);           // direct setter - your entity has photoUrl
+        me.setPhotoUrl(url);
         memberRepository.save(me);
     }
 
-    // ---------------- Helpers ----------------
+    // ---------------- Helpers (profile only) ----------------
 
     private Member getCurrentMemberOrThrow() {
-        String email = currentUserEmail();
+        String email = resolveCurrentEmail();
         if (!StringUtils.hasText(email)) {
             throw new ResourceNotFoundException("Authenticated user not found");
         }
+
         return memberRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Member not found for email: " + email));
     }
 
-    private String currentUserEmail() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null) return null;
-        Object principal = auth.getPrincipal();
-        if (principal instanceof org.springframework.security.core.userdetails.User u) {
-            return u.getUsername(); // commonly the email
+    /** Resolve email from SecurityContext or, as a fallback, from the JWT cookie. */
+    private String resolveCurrentEmail() {
+        var context = SecurityContextHolder.getContext();
+        var auth = (context != null) ? context.getAuthentication() : null;
+        if (auth != null && auth.isAuthenticated()) {
+            Object principal = auth.getPrincipal();
+
+            // 1) If principal implements UserDetails (some setups)
+            if (principal instanceof org.springframework.security.core.userdetails.User ud) {
+                if (StringUtils.hasText(ud.getUsername())) return ud.getUsername();
+            }
+
+            // 2) If principal is your domain Member/Admin, try direct/getEmail via reflection
+            try {
+                if (principal != null) {
+                    // try getEmail()
+                    var m = principal.getClass().getMethod("getEmail");
+                    Object v = m.invoke(principal);
+                    if (v instanceof String s && StringUtils.hasText(s)) return s;
+
+                    // try getUsername() if provided
+                    var u = principal.getClass().getMethod("getUsername");
+                    Object vv = u.invoke(principal);
+                    if (vv instanceof String s2 && StringUtils.hasText(s2)) return s2;
+                }
+            } catch (NoSuchMethodException ignored) {
+            } catch (Exception ignored) {
+            }
+
+            // 3) Fallback to auth.getName()
+            if (StringUtils.hasText(auth.getName())) return auth.getName();
         }
-        return auth.getName();
+
+        // 4) FINAL FALLBACK: parse JWT cookie directly (no change to the filter)
+        return emailFromJwtCookie();
+    }
+
+    private String emailFromJwtCookie() {
+        try {
+            RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
+            if (attrs == null) return null;
+            HttpServletRequest request = (HttpServletRequest) attrs.resolveReference(RequestAttributes.REFERENCE_REQUEST);
+            if (request == null || request.getCookies() == null) return null;
+
+            String token = null;
+            for (Cookie c : request.getCookies()) {
+                if ("jwt".equals(c.getName())) {
+                    token = c.getValue();
+                    break;
+                }
+            }
+            if (!StringUtils.hasText(token)) return null;
+
+            // Use your existing Jwt util to extract the email claim
+            var claims = jwtUtil.extractAllClaims(token);
+            return claims.get("email", String.class);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private MemberResponseDTO toResponseDto(Member m) {
-        List<Long> groupIds = memberGroupRepository.findByMember(m).stream()
+        List<MemberGroup> memberships = memberGroupRepository.findByMember(m);
+        List<Long> groupIds = (memberships == null ? Collections.<MemberGroup>emptyList() : memberships).stream()
+                .filter(mg -> mg != null && mg.getGroup() != null && mg.getGroup().getId() != null)
                 .map(mg -> mg.getGroup().getId())
                 .collect(Collectors.toList());
 
@@ -205,7 +287,7 @@ public class MemberServiceImpl implements IMemberService {
                 .websiteUrl(m.getWebsiteUrl())
                 .batch(m.getBatch())
                 .groupIds(groupIds)
-                .password(null) // NEVER expose password
+                .password(null)             // NEVER expose password
                 .build();
     }
 }
