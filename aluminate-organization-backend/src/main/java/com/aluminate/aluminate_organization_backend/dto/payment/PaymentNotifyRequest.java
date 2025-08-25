@@ -19,7 +19,7 @@ public class PaymentNotifyRequest {
     private String status_code;
     private String md5sig;
     private String custom_1;
-    private String custom_2;
+    private String custom_2; //email
     private String method;
     private String status_message;
 

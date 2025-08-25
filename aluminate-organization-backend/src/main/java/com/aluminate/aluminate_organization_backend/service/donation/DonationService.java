@@ -10,6 +10,8 @@ import com.aluminate.aluminate_organization_backend.repository.DonationRepositor
 import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,7 +21,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Slf4j
+
 @Service
 @RequiredArgsConstructor
 public class DonationService implements IDonationService {
@@ -27,10 +29,12 @@ public class DonationService implements IDonationService {
     private final DonationRepository donationRepository;
     private final MemberRepository memberRepository;
     private final CampaignRepository campaignRepository;
+    private final Logger log = LoggerFactory.getLogger(DonationService.class);
 
     @Override
     public List<DonationResponseDTO> getDonationsByMember(Long memberId) {
         List<Donation> donations = donationRepository.findByMemberId(memberId);
+        log.info("Found DONATION HISTORY {} donations for member ID: {}", donations.size(), memberId);
         return donations.stream().map(this::convertToResponseDTO).collect(Collectors.toList());
     }
 
@@ -80,6 +84,7 @@ public class DonationService implements IDonationService {
 
         List<Donation> donations = donationRepository.findByMemberId(memberId);
 
+        log.info("Calculating donation stats for member ID: {}, donation count: {}", memberId, donations.size());
         BigDecimal totalAmount = donations.stream()
                 .filter(d -> Donation.DonationStatus.COMPLETED.equals(d.getStatus()))
                 .map(Donation::getAmount)

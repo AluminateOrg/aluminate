@@ -2,8 +2,7 @@ package com.aluminate.aluminate_organization_backend.dto.campaign;
 
 import com.aluminate.aluminate_organization_backend.model.CampaignType;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -11,6 +10,7 @@ import java.time.LocalDateTime;
 
 @Data
 @Builder
+
 public class CampaignResponseDTO {
     private Long id;
     private String title;
