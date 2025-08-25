@@ -191,4 +191,15 @@ public class GroupController {
         }
     }
 
+    @GetMapping({"/member/group/count", "/admin/group/count"})
+    public ResponseEntity<ApiResponse> getGroupCount() {
+        try {
+            long count = groupsService.getGroupCount();
+            return ResponseEntity.ok(new ApiResponse("Group count retrieved successfully!", count));
+        } catch (Exception e) {
+            return ResponseEntity
+                    .status(INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse("Failed to retrieve event count", null));
+        }
+    }
 }

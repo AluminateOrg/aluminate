@@ -19,4 +19,6 @@ public interface IGroupsService {
     GroupResponseDTO approveJoinRequest(Long groupId, Long memberId);
     GroupResponseDTO rejectJoinRequest(Long groupId, Long memberId);
     List<PendingRequestDTO> getPendingRequests();
+
+    long getGroupCount();
 }

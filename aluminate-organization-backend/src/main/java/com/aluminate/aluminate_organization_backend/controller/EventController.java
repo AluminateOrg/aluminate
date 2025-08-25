@@ -227,6 +227,21 @@ public class EventController {
         }
     }
 
+    // BOTH MEMBER AND ADMIN
+    @GetMapping({"/admin/event/count", "/member/event/count", "/common/event/count"})
+    public ResponseEntity<ApiResponse> getEventCount() {
+        try {
+            long count = eventService.getEventCount();   // delegate to service
+            return ResponseEntity.ok(
+                    new ApiResponse("Event count retrieved successfully!", count)
+            );
+        } catch (Exception e) {
+            return ResponseEntity
+                    .status(INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse("Failed to retrieve event count", null));
+        }
+    }
+
 
 
 }
