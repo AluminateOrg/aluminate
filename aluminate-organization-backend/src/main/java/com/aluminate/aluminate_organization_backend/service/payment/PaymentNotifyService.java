@@ -82,6 +82,8 @@ package com.aluminate.aluminate_organization_backend.service.payment;
                         log.info("Transaction saved! Order ID: {}", request.getOrder_id());
                         // Publish event to Kafka or any other message broker if needed
                         //logic to handle rest of the payment success
+
+
                     } else {
                         log.warn("Transaction not found for ID: {}", request.getOrder_id());
                     }

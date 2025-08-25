@@ -94,7 +94,7 @@ public class DonationController {
     }
 
     // ADMIN: Get donation statistics for all campaigns
-    @GetMapping("/admin/donations/stats")
+    @GetMapping({"/admin/donations/stats"})
     public ResponseEntity<ApiResponse> getAllDonationStats() {
         try {
             DonationStatsDTO stats = donationService.getAllDonationStats();
