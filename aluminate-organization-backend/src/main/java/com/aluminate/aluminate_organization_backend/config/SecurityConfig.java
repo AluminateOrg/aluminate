@@ -5,6 +5,7 @@ package com.aluminate.aluminate_organization_backend.config;
     import org.springframework.beans.factory.annotation.Value;
     import org.springframework.context.annotation.Bean;
     import org.springframework.context.annotation.Configuration;
+    import org.springframework.core.annotation.Order;
     import org.springframework.security.config.Customizer;
     import org.springframework.security.config.annotation.web.builders.HttpSecurity;
     import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -36,12 +37,25 @@ package com.aluminate.aluminate_organization_backend.config;
         public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
             this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         }
+    // 1) Highest-priority chain for notifications
+        @Bean
+        @Order(0)
+        SecurityFilterChain notificationsChain(HttpSecurity http) throws Exception {
+            http
+                    .securityMatcher("/api/v1/portal/notifications/**")
+                    .csrf(csrf -> csrf.disable())
+                    .authorizeHttpRequests(a -> a.anyRequest().permitAll())
+                    .formLogin(form -> form.disable())
+                    .httpBasic(basic -> basic.disable());
+            return http.build();
+        }
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
             return http
                     .cors(Customizer.withDefaults())
                     .csrf(AbstractHttpConfigurer::disable)
                     .authorizeHttpRequests(auth -> auth
+                            // 👇 allow your test endpoints
                             .requestMatchers(apiPrefix + "/auth/**", apiPrefix + "/public/**").permitAll()
                             .requestMatchers(apiPrefix + "/admin/**").hasRole("ADMIN")
                             .requestMatchers(apiPrefix + "/member/**").hasRole("MEMBER")
