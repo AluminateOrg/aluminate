@@ -17,7 +17,6 @@
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
-      <module name="aluminate-organization" options="-parameters" />
       <module name="aluminate-organization-backend" options="-parameters" />
     </option>
   </component>

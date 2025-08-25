@@ -8,29 +8,31 @@ import com.aluminate.aluminate_organization_backend.model.Member;
 import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
 import com.aluminate.aluminate_organization_backend.service.MemberService;
 import com.aluminate.aluminate_organization_backend.service.members.IMemberService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import static org.springframework.http.HttpStatus.*;
-
-import org.springframework.http.HttpStatus;
-
 import java.util.List;
 
-@RequiredArgsConstructor
+import static org.springframework.http.HttpStatus.*;
+
 @RestController
 @RequestMapping("${api.prefix}")
 public class MemberController {
 
     private final IMemberService memberService;
+    private final MemberRepository memberRepository; // keep if you need it later
+    private final MemberService memberServiceP;
 
-    @Autowired
-    private MemberRepository memberRepository;
-
-    @Autowired
-    private MemberService memberServiceP;
+    // Explicit constructor injection (works even if Lombok is not configured)
+    public MemberController(
+            IMemberService memberService,
+            MemberRepository memberRepository,
+            MemberService memberServiceP
+    ) {
+        this.memberService = memberService;
+        this.memberRepository = memberRepository;
+        this.memberServiceP = memberServiceP;
+    }
 
     // ADMIN ONLY
     @PostMapping("/admin/member/create")
@@ -52,7 +54,7 @@ public class MemberController {
             long count = memberService.getMemberCount();
             return ResponseEntity.ok(new ApiResponse("Member count retrieved successfully!", count));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse("Failed to retrieve member count.", null));
         }
     }
@@ -60,11 +62,12 @@ public class MemberController {
     // BOTH MEMBER AND ADMIN
     @GetMapping({"/admin/member/get/all", "/member/member/get/all"})
     public ResponseEntity<ApiResponse> getAllMembers() {
-        try{
+        try {
             List<MemberResponseDTO> members = memberServiceP.getAllMembers();
             return ResponseEntity.ok(new ApiResponse("Member retrieved successfully!", members));
         } catch (Exception e) {
-            return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(new ApiResponse("Failed to retrieve members.", null));
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse("Failed to retrieve members.", null));
         }
     }
 
@@ -82,4 +85,6 @@ public class MemberController {
                     .body(new ApiResponse("Failed to retrieve membership statuses", null));
         }
     }
+
+
 }
