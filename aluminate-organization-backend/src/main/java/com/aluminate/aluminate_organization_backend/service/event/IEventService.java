@@ -23,4 +23,5 @@ public interface IEventService {
     byte[] exportEventAttendeesCsv(Long eventId);
 
 
+    long getEventCount();
 }
