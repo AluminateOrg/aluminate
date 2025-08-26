@@ -5,9 +5,11 @@ import com.aluminate.aluminate_organization_backend.exception.ResourceNotFoundEx
 import com.aluminate.aluminate_organization_backend.model.Campaign;
 import com.aluminate.aluminate_organization_backend.model.Donation;
 import com.aluminate.aluminate_organization_backend.model.Member;
+import com.aluminate.aluminate_organization_backend.model.Transaction;
 import com.aluminate.aluminate_organization_backend.repository.CampaignRepository;
 import com.aluminate.aluminate_organization_backend.repository.DonationRepository;
 import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
+import com.aluminate.aluminate_organization_backend.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -19,6 +21,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 
@@ -30,6 +33,7 @@ public class DonationService implements IDonationService {
     private final MemberRepository memberRepository;
     private final CampaignRepository campaignRepository;
     private final Logger log = LoggerFactory.getLogger(DonationService.class);
+    private final TransactionRepository transactionRepository;
 
     @Override
     public List<DonationResponseDTO> getDonationsByMember(Long memberId) {
@@ -284,7 +288,14 @@ public class DonationService implements IDonationService {
     @Override
     @Transactional
     public boolean processDonationCompletion(String orderId) {
-        return donationRepository.findByPaymentOrderId(orderId)
+        //get transaction
+        Optional<Transaction> transactionOpt = transactionRepository.findById(Long.valueOf(orderId));
+        if (transactionOpt.isEmpty()) {
+            log.error("Transaction not found for order ID: {}", orderId);
+            return false;
+        }
+        Transaction transaction = transactionOpt.get();
+        return donationRepository.findByTransaction(transaction)
                 .map(donation -> {
                     donation.setStatus(Donation.DonationStatus.COMPLETED);
                     donation.setPaymentStatus(Donation.PaymentStatus.COMPLETED);
@@ -305,7 +316,13 @@ public class DonationService implements IDonationService {
     @Override
     @Transactional
     public boolean processDonationFailure(String orderId, String reason) {
-        return donationRepository.findByPaymentOrderId(orderId)
+        Optional<Transaction> transactionOpt = transactionRepository.findById(Long.valueOf(orderId));
+        if (transactionOpt.isEmpty()) {
+            log.error("Transaction not found for order ID: {}", orderId);
+            return false;
+        }
+        Transaction transaction = transactionOpt.get();
+        return donationRepository.findByTransaction(transaction)
                 .map(donation -> {
                     donation.setStatus(Donation.DonationStatus.FAILED);
                     donation.setPaymentStatus(Donation.PaymentStatus.FAILED);
@@ -318,7 +335,13 @@ public class DonationService implements IDonationService {
 
     @Override
     public Donation getDonationByOrderId(String orderId) {
-        return donationRepository.findByPaymentOrderId(orderId)
+        Optional<Transaction> transactionOpt = transactionRepository.findById(Long.valueOf(orderId));
+        if (transactionOpt.isEmpty()) {
+            log.error("Transaction not found for order ID: {}", orderId);
+            throw new ResourceNotFoundException("Transaction not found for order: " + orderId);
+        }
+        Transaction transaction = transactionOpt.get();
+        return donationRepository.findByTransaction(transaction)
                 .orElseThrow(() -> new ResourceNotFoundException("Donation not found for order: " + orderId));
     }
 
@@ -336,8 +359,6 @@ public class DonationService implements IDonationService {
                 .paymentMethod(donation.getPaymentMethod())
                 .status(donation.getStatus())
                 .paymentStatus(donation.getPaymentStatus())
-                .transactionId(donation.getTransactionId())
-                .paymentOrderId(donation.getPaymentOrderId())
                 .createdAt(donation.getCreatedAt())
                 .updatedAt(donation.getUpdatedAt())
                 .build();
