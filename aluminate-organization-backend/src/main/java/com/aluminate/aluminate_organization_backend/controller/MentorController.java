@@ -3,6 +3,8 @@ package com.aluminate.aluminate_organization_backend.controller;
 import com.aluminate.aluminate_organization_backend.config.ResponseWrapper;
 import com.aluminate.aluminate_organization_backend.dto.mentor.*;
 import com.aluminate.aluminate_organization_backend.service.mentor.MentorService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,6 +18,7 @@ public class MentorController {
 
 
     private final MentorService mentorService;
+    private final Logger logger = LoggerFactory.getLogger(MentorController.class);
 
     public MentorController(MentorService mentorService) {
         this.mentorService = mentorService;
@@ -195,7 +198,9 @@ public class MentorController {
 
     @GetMapping("/common/mentor/is-mentor/{id}")
     public ResponseEntity<ResponseWrapper<Boolean>> isMentor(@PathVariable Long id) {
+        logger.info("Checking if member with ID {} is a mentor", id);
         boolean isMentor = mentorService.isMentor(id);
+        logger.info("isMentor: {}", isMentor);
         ResponseWrapper<Boolean> response = new ResponseWrapper<>(
                 true,
                 isMentor ? "Member is a mentor" : "Member is not a mentor",

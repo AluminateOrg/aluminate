@@ -350,7 +350,8 @@ public class MentorService {
     }
 
     public boolean isMentor(Long id) {
-        return mentorRepository.findById(id)
+
+        return mentorRepository.findByMemberId(id)
                 .map(Mentor::isApproved)
                 .orElse(false);
     }
