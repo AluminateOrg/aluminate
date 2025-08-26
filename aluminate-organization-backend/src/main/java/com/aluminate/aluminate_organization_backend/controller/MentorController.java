@@ -1,5 +1,6 @@
 package com.aluminate.aluminate_organization_backend.controller;
 
+import com.aluminate.aluminate_organization_backend.config.ResponseWrapper;
 import com.aluminate.aluminate_organization_backend.dto.mentor.*;
 import com.aluminate.aluminate_organization_backend.service.mentor.MentorService;
 import org.springframework.http.ResponseEntity;
@@ -10,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("${api.prefix}/user/mentor")
+@RequestMapping("${api.prefix}")
 public class MentorController {
 
 
@@ -20,9 +21,10 @@ public class MentorController {
         this.mentorService = mentorService;
     }
 
-    @PostMapping("/apply")
+    @PostMapping("/member/mentor/apply")
     public ResponseEntity<?> applyAsMentor(@RequestBody MentorRequestDTO request) {
         try {
+            System.out.println("Received mentor application request: " + request);
             MentorResponseDTO responseDTO = mentorService.applyAsMentor(request);
 
             Map<String, Object> response = new HashMap<>();
@@ -38,7 +40,7 @@ public class MentorController {
     }
 
     //get all mentors request
-    @GetMapping("/get-all-unapproved")
+    @GetMapping("/admin/mentor/get-all-unapproved")
     public ResponseEntity<List<MentorApplicationDTO>> getAllUnapprovedMentors() {
         try {
             List<MentorApplicationDTO> mentors = mentorService.getAllUnapprovedMentors();
@@ -48,7 +50,7 @@ public class MentorController {
         }
     }
 
-    @PostMapping("/approve")
+    @PostMapping("/admin/mentor/approve")
     public ResponseEntity<Map<String, Object>> approveMentor(@RequestBody MentorApproveRequest request) {
         try {
             if ("approve".equals(request.getAction())) {
@@ -71,7 +73,7 @@ public class MentorController {
         }
     }
 
-    @GetMapping("/get-all-approved")
+    @GetMapping({"/admin/mentor/get-all-approved", "/member/mentor/get-all-approved"})
     public ResponseEntity<List<MentorApplicationDTO>> getAllApprovedMentors() {
         try {
             List<MentorApplicationDTO> mentors = mentorService.getAllApprovedMentors();
@@ -81,7 +83,7 @@ public class MentorController {
         }
     }
 
-    @PostMapping("/dis-approve")
+    @PostMapping("/admin/mentor/dis-approve")
     public ResponseEntity<Map<String, Object>> disApproveMentor(@RequestBody MentorActiveDeactiveRequest request) {
         Map<String, Object> response = new HashMap<>();
         try {
@@ -119,7 +121,7 @@ public class MentorController {
         }
     }
 
-    @PostMapping("/request-session")
+    @PostMapping("/member/mentor/request-session")
     public ResponseEntity<Map<String, Object>> requestSession(@RequestBody SessionRequestDTO sessionrequestDTO) {
         Map<String, Object> response = new HashMap<>();
         try {
@@ -158,7 +160,8 @@ public class MentorController {
         }
     }
 
-    @GetMapping("/get-all-sessions/{mentorId}")
+    //get all sessions by mentor side
+    @GetMapping("/member/mentor/get-all-sessions/{mentorId}")
     public ResponseEntity<List<MentorSessionDTO>> getAllSessions(@PathVariable Long mentorId) {
         try {
             List<MentorSessionDTO> sessions = mentorService.getAllSessionsByMentor(mentorId);
@@ -168,7 +171,7 @@ public class MentorController {
         }
     }
 
-    @GetMapping("/get-all-sessions-by-user/{userId}")
+    @GetMapping("/member/mentor/get-all-sessions-by-user/{userId}")
     public ResponseEntity<List<MentorSessionDTO>> getAllSessionsByUser(@PathVariable Long userId) {
         try {
             List<MentorSessionDTO> sessions = mentorService.getAllSessionsByMember(userId);
@@ -177,6 +180,50 @@ public class MentorController {
         } catch (Exception e) {
             return ResponseEntity.status(400).body(null);
         }
+    }
+
+    @GetMapping("/member/mentor/connect/get-all-members/{id}")
+    public ResponseEntity<ResponseWrapper<List<ConnectMemberResponse>>> getAllMembersToConnect(@PathVariable Long id) {
+        List<ConnectMemberResponse> members = mentorService.getAllMembers(id);
+        ResponseWrapper<List<ConnectMemberResponse>> response = new ResponseWrapper<>(
+                true,
+                "Members fetched successfully",
+                members
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/common/mentor/is-mentor/{id}")
+    public ResponseEntity<ResponseWrapper<Boolean>> isMentor(@PathVariable Long id) {
+        boolean isMentor = mentorService.isMentor(id);
+        ResponseWrapper<Boolean> response = new ResponseWrapper<>(
+                true,
+                isMentor ? "Member is a mentor" : "Member is not a mentor",
+                isMentor
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    //update the metor acceptance and update session url and date and time
+    @PostMapping("/member/mentor/accept-session/{id}")
+    public  ResponseEntity<ResponseWrapper<Boolean>> updateSessionDetails(@RequestBody MentorSessionAcceptDTO mentorSessionAcceptDTO, @PathVariable Long id) {
+        boolean isUpdated = mentorService.updateMentorSessionDetails(mentorSessionAcceptDTO, id);
+        ResponseWrapper<Boolean> response;
+        if (isUpdated) {
+            response = new ResponseWrapper<>(
+                    true,
+                    "Session details updated successfully",
+                    true
+            );
+        } else {
+            response = new ResponseWrapper<>(
+                    false,
+                    "Failed to update session details",
+                    false
+            );
+        }
+
+        return ResponseEntity.ok(response);
     }
     
 }
