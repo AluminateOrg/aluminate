@@ -7,6 +7,7 @@ import com.aluminate.aluminate_organization_backend.model.MentorProgram;
 import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
 import com.aluminate.aluminate_organization_backend.repository.MentorProgramRepository;
 import com.aluminate.aluminate_organization_backend.repository.MentorRepository;
+import com.aluminate.aluminate_organization_backend.service.EmailService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +15,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -24,11 +26,13 @@ public class MentorService {
     private final MentorRepository mentorRepository;
     private final MemberRepository memberRepository;
     private final MentorProgramRepository mentorProgramRepository;
+    private final EmailService emailService;
 
-    public MentorService(MentorRepository mentorRepository, MemberRepository memberRepository, MentorProgramRepository mentorProgramRepository) {
+    public MentorService(MentorRepository mentorRepository, MemberRepository memberRepository, MentorProgramRepository mentorProgramRepository, EmailService emailService) {
         this.mentorRepository = mentorRepository;
         this.memberRepository = memberRepository;
         this.mentorProgramRepository = mentorProgramRepository;
+        this.emailService = emailService;
     }
 
     // Apply as a mentor
@@ -223,6 +227,18 @@ public class MentorService {
         //update the mentor's session count
         mentor.setSessionCount(mentor.getSessionCount() + 1);
         mentorRepository.save(mentor);
+
+//        if (participants.size() > 1) {
+//            //
+//        }
+
+        //send email to the mentor
+        emailService.sendEmail(mentor.getMember().getEmail(), "New Mentorship Session Request",
+                "You have a new mentorship session request from " +
+                        participants.stream().map(Member::getName).collect(Collectors.joining(", ")) +
+                        participants.stream().map(Member::getEmail).collect(Collectors.joining(", ")) +
+                        ". Please log in to your account to accept or reject the request.");
+
         return true;
 
     }
@@ -260,13 +276,35 @@ public class MentorService {
         Mentor mentor = mentorRepository.findById(mentorId)
                 .orElseThrow(() -> new RuntimeException("Mentor not found"));
 
-        return mentor.getPrograms().stream()
+//        return mentor.getPrograms().stream()
+//                .map(program -> MentorSessionDTO.builder()
+//                        .id(program.getId())
+//                        .programUrl(program.getProgramUrl())
+//                        .date(program.getDate())
+//                        .time(program.getTime())
+//                        .status(program.getStatus())
+//                        .build())
+//                .collect(Collectors.toList());
+        return mentorProgramRepository.findAllByMentorId(mentorId).stream()
                 .map(program -> MentorSessionDTO.builder()
                         .id(program.getId())
                         .programUrl(program.getProgramUrl())
+                        .mentorName(mentor.getMember().getName())
+                        .menteeName(
+                                program.getParticipants().stream()
+                                        .map(Member::getName)
+                                        .collect(Collectors.joining(", "))
+                        )
+                        .menteeEmail(
+                                program.getParticipants().stream()
+                                        .map(Member::getEmail)
+                                        .collect(Collectors.joining(", "))
+                        )
+                        .status(program.getStatus())
                         .date(program.getDate())
                         .time(program.getTime())
-                        .status(program.getStatus())
+                        .sessionDuration("1 hour")
+                        .createdAt(program.getCreatedAt())
                         .build())
                 .collect(Collectors.toList());
     }
@@ -292,8 +330,39 @@ public class MentorService {
                         .date(program.getDate())
                         .time(program.getTime())
                         .sessionDuration("1 hour") // Placeholder, can be calculated based on program data
-                        .feedback("") // Placeholder, can be updated later
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    //get all members for connecting to the session
+    public List<ConnectMemberResponse> getAllMembers(Long id) {
+        List<Member> members = memberRepository.findAll();
+        //remove the member with the given id
+        members = members.stream()
+                .filter(member -> !Objects.equals(member.getId(), id)).toList();
+        return members.stream().map(member -> {
+            ConnectMemberResponse response = new ConnectMemberResponse();
+            response.setId(member.getId());
+            response.setName(member.getName());
+            response.setEmail(member.getEmail());
+            return response;
+        }).collect(Collectors.toList());
+    }
+
+    public boolean isMentor(Long id) {
+        return mentorRepository.findById(id)
+                .map(Mentor::isApproved)
+                .orElse(false);
+    }
+
+    public boolean updateMentorSessionDetails(MentorSessionAcceptDTO mentorSessionAcceptDTO, Long id) {
+        MentorProgram mentorProgram = mentorProgramRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Mentor program not found"));
+        mentorProgram.setProgramUrl(mentorSessionAcceptDTO.getProgramUrl());
+        mentorProgram.setDate(mentorSessionAcceptDTO.getDate());
+        mentorProgram.setTime(mentorSessionAcceptDTO.getTime());
+        mentorProgram.setStatus("SCHEDULED");
+        mentorProgramRepository.save(mentorProgram);
+        return true;
     }
 }

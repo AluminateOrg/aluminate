@@ -125,6 +125,7 @@ public class AuthService {
                 adminDTO
         );
     }
+
     @Transactional
     protected LoginResponse handleGlobalBackendLogin(String email, String password) {
         logger.info("User not found locally, checking global backend for email: {}", email);

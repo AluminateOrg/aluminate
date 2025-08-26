@@ -7,4 +7,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface EventRepository extends JpaRepository<Event, Long> {
     boolean existsByTitleAndIsDeletedFalse(String title);
+    boolean existsByTitleAndIsDeletedFalseAndIdNot(String title, Long id);
+
 }
