@@ -17,8 +17,12 @@ public enum CampaignType {
         this.displayName = displayName;
     }
 
+    /**
+     * Return the enum constant name (e.g. GENERAL) instead of displayName,
+     * so JPA and DB constraints stay consistent.
+     */
     @Override
     public String toString() {
-        return this.displayName;
+        return name();
     }
 }
