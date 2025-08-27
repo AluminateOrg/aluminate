@@ -32,7 +32,7 @@ public class MemberCampaignController {
     /**
      * Retrieves all active campaigns that members can donate to.
      */
-    @GetMapping("/active")
+    @GetMapping("/get/active")
     public ResponseEntity<ApiResponse> getActiveCampaigns() {
         try {
             log.info("Fetching active campaigns for member donation");
