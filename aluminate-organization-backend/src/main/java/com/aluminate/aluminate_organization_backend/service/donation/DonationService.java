@@ -43,6 +43,11 @@ public class DonationService implements IDonationService {
     }
 
     @Override
+    public long getTotalDonationCount() {
+        return donationRepository.count();
+    }
+
+    @Override
     public List<DonationResponseDTO> getDonationsByCampaign(Long campaignId) {
         List<Donation> donations = donationRepository.findByCampaignId(campaignId);
         return donations.stream().map(this::convertToResponseDTO).collect(Collectors.toList());
@@ -333,7 +338,53 @@ public class DonationService implements IDonationService {
                 .orElse(false);
     }
 
+
+    /// ///////////////////////////////////////////////////////////
+    ///
+    ///
     @Override
+    public String exportDonationsToCSV(String status, Long campaignId, String startDate, String endDate) {
+        // Get all donations
+        List<Donation> donations = donationRepository.findAll();
+
+        // Apply status filter if provided
+        if (status != null && !status.trim().isEmpty()) {
+            donations = donations.stream()
+                    .filter(d -> status.equalsIgnoreCase(d.getStatus()))
+                    .collect(Collectors.toList());
+        }
+
+        // Apply campaign filter if provided
+        if (campaignId != null) {
+            donations = donations.stream()
+                    .filter(d -> d.getCampaign().getId().equals(campaignId))
+                    .collect(Collectors.toList());
+        }
+
+        // Build CSV content
+        StringBuilder csv = new StringBuilder();
+        csv.append("ID,Amount,Date,Campaign,Member,Status,Payment Method\n");
+
+        for (Donation donation : donations) {
+            csv.append(String.format("%d,%.2f,%s,%s,%s,%s,%s\n",
+                    donation.getId(),
+                    donation.getAmount(),
+                    donation.getDate(),
+                    donation.getCampaign().getTitle(),
+                    donation.isAnonymous() ? "Anonymous" : donation.getMember().getName(),
+                    donation.getStatus(),
+                    donation.getPaymentMethod()
+            ));
+        }
+
+        return csv.toString();
+    }
+
+    ////////////////////////////////////////////////////////////////
+    /// ////////////////////////////////////////////////////////////////
+
+
+//    @Override
     public Donation getDonationByOrderId(String orderId) {
         Optional<Transaction> transactionOpt = transactionRepository.findById(Long.valueOf(orderId));
         if (transactionOpt.isEmpty()) {

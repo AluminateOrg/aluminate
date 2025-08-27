@@ -21,7 +21,7 @@ public interface IDonationService {
     /**
      * Get donations by member ID with pagination
      */
-    Page<DonationResponseDTO> getDonationsByMemberPaged(Long memberId, Pageable pageable);
+//    Page<DonationResponseDTO> getDonationsByMemberPaged(Long memberId, Pageable pageable);
 
     /**
      * Get donations by campaign ID
@@ -31,7 +31,7 @@ public interface IDonationService {
     /**
      * Get donations by campaign ID with pagination
      */
-    Page<DonationResponseDTO> getDonationsByCampaignPaged(Long campaignId, Pageable pageable);
+//    Page<DonationResponseDTO> getDonationsByCampaignPaged(Long campaignId, Pageable pageable);
 
     /**
      * Get all donations
@@ -41,8 +41,8 @@ public interface IDonationService {
     /**
      * Get all donations with filters and pagination
      */
-    Page<DonationResponseDTO> getAllDonationsWithFilters(String status, Long campaignId,
-                                                         Long memberId, String search, Pageable pageable);
+//    Page<DonationResponseDTO> getAllDonationsWithFilters(String status, Long campaignId,
+//                                                         Long memberId, String search, Pageable pageable);
 
     /**
      * Get donation by ID
@@ -61,12 +61,12 @@ public interface IDonationService {
     /**
      * Get donations by status with pagination
      */
-    Page<DonationResponseDTO> getDonationsByStatusPaged(String status, Pageable pageable);
+//    Page<DonationResponseDTO> getDonationsByStatusPaged(String status, Pageable pageable);
 
     /**
      * Update donation status with reason
      */
-    DonationResponseDTO updateDonationStatus(Long donationId, String status, String reason);
+    DonationResponseDTO updateDonationStatus(Long donationId, String status);
 
     // ==========================================
     // STATISTICS
@@ -109,13 +109,12 @@ public interface IDonationService {
     /**
      * Get donation history for a member with filters
      */
-    Page<DonationResponseDTO> getDonationHistory(Long memberId, String status,
-                                                 Long campaignId, Pageable pageable);
+//    Page<DonationResponseDTO> getDonationHistory(Long memberId, String status, Long campaignId, Pageable pageable);
 
     /**
      * Get donation trends over time
      */
-    List<DonationTrendDTO> getDonationTrends(int days, String groupBy);
+//    List<DonationTrendDTO> getDonationTrends(int days, String groupBy);
 
     /**
      * Export donations to CSV
@@ -125,7 +124,7 @@ public interface IDonationService {
     /**
      * Get total donation count
      */
-    long getTotalDonationCount();
+     long getTotalDonationCount();
 
     // ==========================================
     // BUSINESS OPERATIONS
