@@ -1,6 +1,7 @@
 package com.aluminate.aluminate_organization_backend.dto;
 
 import com.aluminate.aluminate_organization_backend.dto.login.UserDTO;
+import com.aluminate.aluminate_organization_backend.model.Role;
 import lombok.*;
 
 @Data
@@ -25,5 +26,10 @@ public class MemberDTO implements UserDTO{
     private String githubUrl;
     private String websiteUrl;
     private int batch;
+
+    @Override
+    public Role getRole() {
+        return Role.MEMBER;
+    }
 
 }

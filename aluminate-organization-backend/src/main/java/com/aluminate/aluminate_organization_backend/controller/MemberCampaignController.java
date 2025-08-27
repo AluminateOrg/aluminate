@@ -37,6 +37,7 @@ public class MemberCampaignController {
         try {
             log.info("Fetching active campaigns for member donation");
             List<CampaignResponseDTO> campaigns = campaignService.getActiveCampaignsForDonation();
+            log.info("campaigns: {}", campaigns);
             log.info("Retrieved {} active campaigns", campaigns.size());
             return ResponseEntity.ok(new ApiResponse("Active campaigns retrieved successfully", campaigns));
         } catch (Exception e) {

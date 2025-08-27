@@ -37,6 +37,8 @@ public class CampaignService implements ICampaignService {
 
         validateCampaignRequest(request);
 
+        log.info("type: {}", request.getType());
+log.info("type instance of CampaignType: {}", request.getType() instanceof CampaignType);
         Campaign campaign = Campaign.builder()
                 .title(request.getTitle().trim())
                 .description(request.getDescription() != null ? request.getDescription().trim() : "")
