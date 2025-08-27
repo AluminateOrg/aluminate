@@ -111,6 +111,10 @@ public class EventService implements IEventService{
                 .collect(Collectors.toList());
     }
 
+    public long getEventCount() {
+        return eventRepository.count();
+    }
+
     private EventResponseDTO convertToDTO(Event event) {
         return EventResponseDTO.builder()
                 .id(event.getId())

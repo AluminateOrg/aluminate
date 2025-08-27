@@ -51,14 +51,14 @@ package com.aluminate.aluminate_organization_backend.controller;
     public ResponseEntity<ResponseWrapper<LoginResponse>> login(@Valid @RequestBody EncryptedLoginRequest encryptedRequest, HttpServletResponse httpResponse) {
         try{
             logger.info("Login attempting...");
-            logger.info("encryptedRequest: " + encryptedRequest);
+            logger.info("encryptedRequest: {} " ,encryptedRequest);
 
             //decrypt the request
             String decrypted = RSAEncryptionUtil.decrypt(
                     encryptedRequest.getPayload(),
                     organizationPrivateKey
             );
-            logger.info("decrypted: " + decrypted);
+            logger.info("decrypted: {}",decrypted);
             LoginRequest request = objectMapper.readValue(
                     decrypted,
                     LoginRequest.class
@@ -66,9 +66,10 @@ package com.aluminate.aluminate_organization_backend.controller;
 
 
             LoginResponse response = authService.login(request.getEmail(), request.getPassword());
+
             //set cookies- jwt,csrf,session
             authService.setAuthCookies(httpResponse, response.getToken());
-            logger.info("Login successful-> sending cookies :{}", response.getToken());
+            logger.info("Login successful-> user :{}", response.getUser());
 
             //set token to null
             response.setToken(null);
