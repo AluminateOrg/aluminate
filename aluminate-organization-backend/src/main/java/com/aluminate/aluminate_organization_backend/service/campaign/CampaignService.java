@@ -388,12 +388,12 @@ log.info("type instance of CampaignType: {}", request.getType() instanceof Campa
     }
 
     private String determineCampaignStatus(Campaign campaign) {
-        // Priority order: DELETED > EXPIRED > COMPLETED > INACTIVE > ACTIVE
+        // Priority: DELETED > EXPIRED > COMPLETED > ACTIVE/INACTIVE
         if (campaign.isDeleted()) return "DELETED";
         if (campaign.isExpired()) return "EXPIRED";
         if (campaign.isGoalAchieved()) return "COMPLETED";
-        if (!campaign.isActive()) return "INACTIVE";
-        return "ACTIVE";
+        // Now check isActive correctly
+        return campaign.isActive() ? "ACTIVE" : "INACTIVE";
     }
 
     private CampaignResponseDTO mapToCampaignResponseDTO(Campaign campaign) {

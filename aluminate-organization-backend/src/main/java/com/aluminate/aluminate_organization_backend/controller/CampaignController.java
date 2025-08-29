@@ -30,7 +30,7 @@ import static org.springframework.http.HttpStatus.*;
 @Slf4j
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("${api.prefix}/admin/campaign")
+@RequestMapping("${api.prefix}/admin/campaign") // Changed to /admin/campaign
 @Validated
 @CrossOrigin(origins = "*")
 public class CampaignController {
@@ -147,31 +147,21 @@ public class CampaignController {
     }
 
     /**
-     * FIXED: Toggles campaign status (active/inactive).
+     * Toggles campaign status (active/inactive).
      */
     @PutMapping("/{id}/toggle-status")
     public ResponseEntity<ApiResponse> toggleCampaignStatus(
             @PathVariable @Min(value = 1, message = "Campaign ID must be positive") Long id,
             @RequestParam boolean isActive) {
         try {
-            log.info("=== CONTROLLER TOGGLE START ===");
             log.info("Toggling campaign {} status to: {}", id, isActive);
-
             CampaignResponseDTO updatedCampaign = campaignService.updateCampaignStatus(id, isActive);
-
-            log.info("Controller received updated campaign with isActive: {}", updatedCampaign.isActive());
-
             String message = isActive ? "Campaign activated successfully" : "Campaign deactivated successfully";
-            log.info("Returning response: {}", message);
-            log.info("=== CONTROLLER TOGGLE END ===");
-
             return ResponseEntity.ok(new ApiResponse(message, updatedCampaign));
         } catch (ResourceNotFoundException e) {
-            log.warn("Campaign not found for toggle: {}", id);
             return ResponseEntity.status(NOT_FOUND)
                     .body(new ApiResponse(e.getMessage(), null));
         } catch (IllegalStateException e) {
-            log.warn("Business rule violation for campaign toggle: {}", e.getMessage());
             return ResponseEntity.status(BAD_REQUEST)
                     .body(new ApiResponse(e.getMessage(), null));
         } catch (Exception e) {
