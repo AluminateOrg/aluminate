@@ -66,6 +66,16 @@ public class Transaction {
     )
     private Member member;
 
+    @OneToOne
+    @JoinColumn(
+            name="donation_id",
+            foreignKey = @ForeignKey(
+                    name = "fk_transaction_donation",
+                    foreignKeyDefinition = "FOREIGN KEY (donation_id) REFERENCES donation(id) ON UPDATE CASCADE ON DELETE SET NULL"
+            )
+    )
+    private Donation donation;
+
     public boolean isPresent() {
         return this.id != null;
     }

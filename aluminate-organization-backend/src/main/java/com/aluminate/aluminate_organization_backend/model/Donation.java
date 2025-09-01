@@ -33,9 +33,9 @@ public class Donation {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "payment_option_id")
-    private PaymentOption paymentOption;
+    @OneToOne(mappedBy = "donation", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Transaction transaction;
+
 
     @Column(nullable = false)
     private boolean isAnonymous;
@@ -52,10 +52,7 @@ public class Donation {
     @Column(length = 100)
     private String paymentReference;
 
-    @Column
-    private String paymentToken;
 
-    // Use String instead of enum to match database schema
     @Column
     private String status;
 
@@ -63,19 +60,11 @@ public class Donation {
     private String paymentStatus;
 
     @Column
-    private String transactionId;
-
-    @Column
     private LocalDateTime updatedAt;
 
     @Column
     private LocalDate donationDate;
 
-    @Column
-    private String paymentHash;
-
-    @Column
-    private String paymentOrderId;
 
     // Helper methods for status validation
     public void setStatus(String status) {
