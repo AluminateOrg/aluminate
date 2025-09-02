@@ -14,6 +14,8 @@ import org.springframework.kafka.support.serializer.JsonSerializer;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.aluminate.aluminate_organization_backend.config.kafka.KafkaProducerConfig.getStringObjectProducerFactory;
+
 @Configuration
 public class NotifKafkaProducerConfig {
 
@@ -22,15 +24,7 @@ public class NotifKafkaProducerConfig {
 
     @Bean("notifProducerFactory")
     public ProducerFactory<String, Object> notifProducerFactory() {
-        Map<String, Object> props = new HashMap<>();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap);
-        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
-        props.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, false); // plain JSON (safe cross-service)
-        props.put(ProducerConfig.ACKS_CONFIG, "all");
-        props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
-        props.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, 5);
-        return new DefaultKafkaProducerFactory<>(props);
+        return getStringObjectProducerFactory(bootstrap);
     }
 
     @Bean("notifKafkaTemplate")

@@ -25,6 +25,13 @@ public class EmailNotificationConsumer {
         this.mailSender = mailSender; this.idem = idem;
     }
 
+    @KafkaListener(
+            topics = KafkaTopics.NOTIF_REQUESTS_V1,
+            containerFactory = "notifListenerFactory",
+            groupId = "notif-email-workers",
+            id = "notif-email-1"
+    )
+
     @KafkaListener(topics = KafkaTopics.NOTIF_REQUESTS_V1, containerFactory = "notifListenerFactory")
     public void onRequest(@Payload NotificationRequest req, Acknowledgment ack) {
         try {
