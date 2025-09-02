@@ -1,13 +1,8 @@
 package com.aluminate.aluminate_organization_backend.service.payment;
 
     import com.aluminate.aluminate_organization_backend.dto.payment.PaymentNotifyRequest;
-    import com.aluminate.aluminate_organization_backend.model.Member;
-    import com.aluminate.aluminate_organization_backend.model.Organization;
-    import com.aluminate.aluminate_organization_backend.model.Transaction;
-    import com.aluminate.aluminate_organization_backend.model.TransactionStatus;
-    import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
-    import com.aluminate.aluminate_organization_backend.repository.OrganizationRepository;
-    import com.aluminate.aluminate_organization_backend.repository.TransactionRepository;
+    import com.aluminate.aluminate_organization_backend.model.*;
+    import com.aluminate.aluminate_organization_backend.repository.*;
     import org.slf4j.Logger;
     import org.slf4j.LoggerFactory;
     import org.springframework.beans.factory.annotation.Value;
@@ -16,10 +11,13 @@ package com.aluminate.aluminate_organization_backend.service.payment;
 
     import java.math.BigDecimal;
     import java.security.MessageDigest;
+    import java.time.LocalDate;
+    import java.time.LocalDateTime;
     import java.util.Objects;
     import java.util.Optional;
 
-    /**
+
+/**
      * Service for handling payment notifications from PayHere.
      */
     @Service
@@ -33,6 +31,8 @@ package com.aluminate.aluminate_organization_backend.service.payment;
         private final OrganizationRepository organizationRepository;
         private final Logger log = LoggerFactory.getLogger(PaymentNotifyService.class);
         private final MemberRepository memberRepository;
+        private final CampaignRepository campaignRepository;
+        private final DonationRepository donationRepository;
 
         /**
          * Constructs a PaymentNotifyService with required repositories.
@@ -40,14 +40,20 @@ package com.aluminate.aluminate_organization_backend.service.payment;
          * @param transactionRepository the transaction repository
          * @param organizationRepository the organization repository
          * @param memberRepository the member repository
+         * @param campaignRepository the campaign repository
+         * @param donationRepository the donation repository
          */
         public PaymentNotifyService(TransactionRepository transactionRepository,
                                     OrganizationRepository organizationRepository,
-                                    MemberRepository memberRepository
+                                    MemberRepository memberRepository,
+                                    CampaignRepository campaignRepository,
+                                    DonationRepository donationRepository
         ) {
             this.transactionRepository = transactionRepository;
             this.organizationRepository = organizationRepository;
             this.memberRepository = memberRepository;
+            this.campaignRepository = campaignRepository;
+            this.donationRepository = donationRepository;
         }
 
         /**
@@ -82,6 +88,46 @@ package com.aluminate.aluminate_organization_backend.service.payment;
                         log.info("Transaction saved! Order ID: {}", request.getOrder_id());
                         // Publish event to Kafka or any other message broker if needed
                         //logic to handle rest of the payment success
+
+                        //get campaign & member
+                        //get member
+                        Optional<Member> optionalMember = memberRepository.findByEmail(request.getCustom_2());
+                        if (optionalMember.isEmpty()) {
+                            throw new IllegalArgumentException("Member not found for email: " + request.getCustom_2());
+                        }
+                        Member member = optionalMember.get();
+
+                        //custom_1 has campaign id
+                        Long campaignId;
+                        try {
+                            campaignId = Long.valueOf(request.getCustom_1());
+                        } catch (NumberFormatException e) {
+                            throw new IllegalArgumentException("Invalid campaign ID in custom_1: " + request.getCustom_1());
+                        }
+
+                        //find campaign
+                        Optional<Campaign> optionalCampaign = campaignRepository.findById(campaignId);
+                        if (optionalCampaign.isEmpty()) {
+                            throw new IllegalArgumentException("Campaign not found for ID: " + campaignId);
+
+                        }
+                        Campaign campaign = optionalCampaign.get();
+
+                        Donation donation = Donation.builder()
+                                .campaign(campaign)
+                                .member(member)
+                                .amount(new BigDecimal(request.getPayhere_amount()))
+                                .date(LocalDate.now())
+                                .createdAt(LocalDateTime.now())
+                                .status(Donation.DonationStatus.PENDING)
+                                .paymentStatus(Donation.PaymentStatus.PENDING)
+                                .paymentMethod("PAYHERE")
+                                .build();
+
+                        Donation savedDonation = donationRepository.save(donation);
+                        log.info("Donation saved with ID: {}", savedDonation.getId());
+
+
                     } else {
                         log.warn("Transaction not found for ID: {}", request.getOrder_id());
                     }

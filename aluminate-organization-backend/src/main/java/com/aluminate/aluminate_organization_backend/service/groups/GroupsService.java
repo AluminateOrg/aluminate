@@ -60,6 +60,12 @@ public class GroupsService implements IGroupsService {
                 .collect(Collectors.toList());
     }
 
+
+    public long getGroupCount() {
+        // Call on the instance, not statically
+        return groupsRepository.count();
+    }
+
     private GroupResponseDTO convertToDTO(Groups group) {
         return GroupResponseDTO.builder()
                 .id(group.getId())

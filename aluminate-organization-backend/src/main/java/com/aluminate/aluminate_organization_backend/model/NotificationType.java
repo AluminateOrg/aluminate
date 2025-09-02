@@ -4,18 +4,18 @@ import lombok.Getter;
 
 @Getter
 public enum NotificationType {
-    EVENT("Event notification"),
-    GROUP("Group notification"),
-    DONATION("Donation notification"),
-    SYSTEM("System notification"),
-    INFO("Information"),
-    MENTORSHIP("Mentorship notification"),
+    EVENT("Event"),
+    GROUP("Group"),
+    DONATION("Donation"),
+    SYSTEM("System"),
+    INFO("Info"),
+    MENTORSHIP("Mentorship"),
     WARNING("Warning"),
     SUCCESS("Success");
 
-    private final String description;
+    private final String displayName;
 
-    NotificationType(String description) {
-        this.description = description;
+    NotificationType(String displayName) {
+        this.displayName = displayName;
     }
 }
