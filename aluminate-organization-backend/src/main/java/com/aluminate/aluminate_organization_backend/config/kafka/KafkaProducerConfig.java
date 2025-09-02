@@ -22,6 +22,10 @@ public class KafkaProducerConfig {
 
     @Bean
     public ProducerFactory<String, Object> producerFactory() {
+        return getStringObjectProducerFactory(bootstrap);
+    }
+
+    static ProducerFactory<String, Object> getStringObjectProducerFactory(String bootstrap) {
         Map<String, Object> props = new HashMap<>();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);

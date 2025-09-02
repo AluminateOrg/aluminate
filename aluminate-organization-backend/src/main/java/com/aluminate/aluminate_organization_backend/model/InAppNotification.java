@@ -15,7 +15,7 @@ public class InAppNotification {
     @Column(nullable = false) private String tenantId;
     @Column(nullable = false) private String type;
 
-    @Lob @Column(nullable = false)
+    @Column(nullable = false)
     private String payloadJson;
 
     @Column(nullable = false)
