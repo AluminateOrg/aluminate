@@ -10,7 +10,7 @@ This document explains how to run and use the chat subsystem implemented inside 
   - pub/sub fan-out across instances
   - rate-limiting counters
 - WebSocket (STOMP over `/ws`) for real-time delivery.
-- REST endpoints under `/api/v1`.
+- REST endpoints under `${api.prefix}` (e.g., `/api/v1/portal`).
 
 ## Run locally
 
@@ -48,11 +48,11 @@ Auth: Bearer JWT with claims {sub, orgId, roles}.
 ## Examples
 
 curl -H "Authorization: Bearer $JWT" \
-  "http://localhost:8098/api/v1/orgs/org_123/groups/UNIVERSAL/messages?limit=20"
+  "http://localhost:8098/api/v1/portal/orgs/org_123/groups/UNIVERSAL/messages?limit=20"
 
 curl -XPOST -H "Authorization: Bearer $JWT" -H "Content-Type: application/json" \
   -d '{"content":"Hello"}' \
-  "http://localhost:8098/api/v1/orgs/org_123/groups/group_456/messages"
+  "http://localhost:8098/api/v1/portal/orgs/org_123/groups/group_456/messages"
 
 ## Notes
 
