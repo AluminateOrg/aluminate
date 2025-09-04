@@ -1,5 +1,7 @@
 package com.aluminate.aluminate_organization_backend.chat.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
@@ -18,13 +20,15 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("${api.prefix}")
 @RequiredArgsConstructor
 @Validated
 public class ChatRestController {
 
     private final ChatService chatService;
     private final JwtService jwtService;
+
+    private final Logger logger = LoggerFactory.getLogger(ChatRestController.class);
 
     @GetMapping("/orgs/{orgId}/groups/{groupId}/messages")
     public ResponseEntity<PageResponse<MessageResponse>> getMessages(
@@ -33,6 +37,8 @@ public class ChatRestController {
             @RequestParam(defaultValue = "50") int limit,
             @RequestParam(required = false) String cursor,
             HttpServletRequest http) {
+
+        logger.info("getMessages orgId: {}, groupId: {}, limit: {}, cursor: {}", orgId, groupId, limit, cursor);
 
         JwtPrincipal principal = jwtService.validateAndExtract(http.getHeader("Authorization"));
         Assert.isTrue(orgId.equals(principal.getOrgId()), "orgId mismatch");
