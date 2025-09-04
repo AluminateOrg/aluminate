@@ -18,7 +18,10 @@ public class MemberGroup {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "member_id", nullable = false)
+    @JoinColumn(name = "member_id", foreignKey = @ForeignKey(
+            name = "fk_member",
+            foreignKeyDefinition = "FOREIGN KEY (member_id) REFERENCES member(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    ))
     private Member member;
 
     @ManyToOne
