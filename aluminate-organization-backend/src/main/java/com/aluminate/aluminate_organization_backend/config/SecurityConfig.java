@@ -41,6 +41,12 @@ public class SecurityConfig {
                         // Public endpoints
                         .requestMatchers(apiPrefix + "/auth/**", apiPrefix + "/public/**").permitAll()
 
+                        // Chat REST endpoints require authentication
+                        .requestMatchers(apiPrefix + "/orgs/**").permitAll()
+
+                        // Allow WebSocket handshake (STOMP auth is enforced by channel interceptor)
+                        .requestMatchers("/ws/**").permitAll()
+
                         // Role-based endpoints
                         .requestMatchers(apiPrefix + "/admin/**").hasRole("ADMIN")
                         .requestMatchers(apiPrefix + "/member/**").hasRole("MEMBER")
