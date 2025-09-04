@@ -4,6 +4,9 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -32,6 +35,7 @@ public class ChatService {
     private final MessageRepository repo;
     private final MembershipService membershipService;
     private final StringRedisTemplate redis;
+    private final UserService userService;
     private final SimpMessagingTemplate messaging;
     private final ChatProperties props;
 
@@ -49,12 +53,16 @@ public class ChatService {
             messages = repo.findByOrgIdAndGroupIdOrderByCreatedAtDesc(orgId, groupId, PageRequest.of(0, limit));
         }
 
+        // resolve sender names in batch
+        Set<String> senderIds = messages.stream().map(Message::getSenderId).collect(Collectors.toSet());
+        Map<String, String> names = userService.getDisplayNames(senderIds);
+
         String nextCursor = messages.size() == limit
                 ? messages.get(messages.size() - 1).getCreatedAt().toString()
                 : null;
 
         return PageResponse.<MessageResponse>builder()
-                .items(messages.stream().map(this::toDto).toList())
+                .items(messages.stream().map(m -> toDto(m, names.getOrDefault(m.getSenderId(), m.getSenderId()))).toList())
                 .nextCursor(nextCursor)
                 .build();
     }
@@ -96,15 +104,17 @@ public class ChatService {
 
         // also deliver to local WS clients immediately
         String topic = topicFor(orgId, groupId);
-        messaging.convertAndSend(topic, toDto(m));
+        String senderName = userService.getDisplayName(userId);
+        MessageResponse dto = toDto(m, senderName);
+        messaging.convertAndSend(topic, dto);
 
-        return toDto(m);
+        return dto;
     }
 
     private void publishEvent(String orgId, Message m) {
         try {
             String channel = String.format(props.getRedisPubsubPattern(), orgId);
-            String payload = MAPPER.writeValueAsString(toDto(m));
+            String payload = MAPPER.writeValueAsString(toDto(m, userService.getDisplayName(m.getSenderId())));
             redis.convertAndSend(channel, payload);
         } catch (Exception e) {
             // do not fail the send if pubsub fails
@@ -140,13 +150,14 @@ public class ChatService {
         }
     }
 
-    private MessageResponse toDto(Message m) {
+    private MessageResponse toDto(Message m, String senderName) {
         return MessageResponse.builder()
                 .id(m.getId())
                 .orgId(m.getOrgId())
                 .groupId(m.getGroupId())
                 .senderId(m.getSenderId())
                 .senderRole(m.getSenderRole())
+                .senderName(senderName)
                 .content(m.getContent())
                 .createdAt(m.getCreatedAt())
                 .build();

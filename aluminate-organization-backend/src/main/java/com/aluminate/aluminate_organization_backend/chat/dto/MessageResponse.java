@@ -13,6 +13,7 @@ public class MessageResponse {
     String groupId;
     String senderId;
     String senderRole;
+    String senderName;
     String content;
     Instant createdAt;
 }
