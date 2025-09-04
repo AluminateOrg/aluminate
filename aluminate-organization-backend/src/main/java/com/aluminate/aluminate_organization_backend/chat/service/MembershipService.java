@@ -50,7 +50,7 @@ public class MembershipService {
             log.warn("Failed to read membership cache for {}:{} - {}", orgId, userId, e.getMessage());
         }
 
-        Set<String> groups = membershipClient.groupsForUser(orgId, userId);
+        Set<String> groups = membershipClient.groupsForUser(userId);
         cacheGroups(orgId, userId, groups);
         return groups;
     }
@@ -64,7 +64,7 @@ public class MembershipService {
             String key = cacheKey(orgId, userId);
             redis.opsForValue().set(key, MAPPER.writeValueAsString(groups == null ? Collections.emptySet() : groups),
                     Duration.ofSeconds(props.getMembershipCacheTtlSeconds()));
-        } catch (DataAccessException | RuntimeException e) {
+        } catch (Exception e) {
             log.warn("Failed to cache membership for {}:{} - {}", orgId, userId, e.getMessage());
         }
     }
