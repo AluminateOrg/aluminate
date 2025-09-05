@@ -104,7 +104,15 @@ public class AuthService {
         validateMember(member, password, email);
 
         MemberDTO memberDTO = createMemberDTO(member);
-        Map<String, Object> claims = createClaims(email);
+//        Map<String, Object> claims = createClaims(email);
+
+// Build chat-compatible claims
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("email", email); // keep existing for compatibility
+        claims.put("userId", String.valueOf(member.getId()));
+        claims.put("orgId", String.valueOf(member.getOrganization().getId()));
+        claims.put("roles", java.util.List.of("MEMBER"));
+        logger.info("claims: {}", claims);
 
         return new LoginResponse(
                 jwt.generateToken(claims, member),
@@ -118,7 +126,15 @@ public class AuthService {
         validateAdmin(admin, password, email);
 
         AdminDTO adminDTO = createAdminDTO(admin);
-        Map<String, Object> claims = createClaims(email);
+//        Map<String, Object> claims = createClaims(email);
+
+// Build chat-compatible claims
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("email", email); // keep existing for compatibility
+        claims.put("userId", String.valueOf(admin.getId()));
+        claims.put("orgId", String.valueOf(admin.getOrganization().getId()));
+        claims.put("roles", java.util.List.of("ADMIN"));
+
 
         return new LoginResponse(
                 jwt.generateToken(claims, admin),

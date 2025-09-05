@@ -246,4 +246,17 @@ public class GroupsService implements IGroupsService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public List<GroupResponseDTO> getGroupsByMember(Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("Member not found with id: " + memberId));
+
+        List<MemberGroup> memberships = memberGroupRepository.findByMember_IdAndRequestStatus(
+                memberId, GroupJoinRequestStatus.APPROVED);
+
+        return memberships.stream()
+                .map(mg -> convertToDTO(mg.getGroup()))
+                .collect(Collectors.toList());
+    }
+
 }
