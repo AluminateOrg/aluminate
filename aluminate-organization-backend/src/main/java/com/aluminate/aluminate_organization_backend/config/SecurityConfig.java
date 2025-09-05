@@ -48,15 +48,15 @@ public class SecurityConfig {
                         .requestMatchers("/ws/**").permitAll()
 
                         // Role-based endpoints
-                        .requestMatchers(apiPrefix + "/admin/**").hasRole("ADMIN")
-                        .requestMatchers(apiPrefix + "/member/**").hasRole("MEMBER")
-                        .requestMatchers(apiPrefix + "/common/**").hasAnyRole("ADMIN", "MEMBER")
+                        .requestMatchers(apiPrefix + "/admin/**").hasAnyRole("ADMIN", "admin")
+                        .requestMatchers(apiPrefix + "/member/**").hasAnyRole("MEMBER", "member")
+                        .requestMatchers(apiPrefix + "/common/**").hasAnyRole("ADMIN", "MEMBER", "admin", "member")
 
                         // Campaign endpoints - require ADMIN role
-                        .requestMatchers(apiPrefix + "/campaign/**").hasRole("ADMIN")
+                        .requestMatchers(apiPrefix + "/campaign/**").hasAnyRole("ADMIN", "admin")
 
-                        // User payment endpoints - require MEMBER role
-                        .requestMatchers(apiPrefix + "/user/**").hasRole("MEMBER")
+                        // User payment endpoints - require MEMBER role - FIXED
+                        .requestMatchers(apiPrefix + "/user/**").hasAnyRole("MEMBER", "member")
 
                         // Deny all other requests
                         .anyRequest().denyAll()

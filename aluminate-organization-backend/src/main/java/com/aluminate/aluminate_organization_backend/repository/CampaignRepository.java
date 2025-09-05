@@ -47,29 +47,30 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long> {
     @Query("SELECT c FROM Campaign c WHERE c.isDeleted = false AND c.raised >= :minRaised")
     List<Campaign> findByMinimumRaisedAmount(@Param("minRaised") BigDecimal minRaised);
 
-    // Statistics queries
+    // FIXED STATISTICS QUERIES
     @Query("SELECT COUNT(c) FROM Campaign c WHERE c.isDeleted = false")
     long countActiveCampaigns();
 
-    @Query("SELECT COUNT(c) FROM Campaign c WHERE c.isDeleted = false AND c.isActive = true")
+    @Query("SELECT COUNT(c) FROM Campaign c WHERE c.isDeleted = false AND c.isActive = true AND c.endDate >= CURRENT_DATE")
     long countActiveCampaignsWithActiveStatus();
 
     @Query("SELECT COUNT(c) FROM Campaign c WHERE c.isDeleted = false AND c.endDate < CURRENT_DATE")
     long countExpiredCampaigns();
 
-    @Query("SELECT COUNT(c) FROM Campaign c WHERE c.isDeleted = false AND c.isActive = false")
+    @Query("SELECT COUNT(c) FROM Campaign c WHERE c.isDeleted = false AND c.isActive = false AND c.endDate >= CURRENT_DATE")
     long countInactiveCampaigns();
 
     @Query("SELECT COUNT(c) FROM Campaign c WHERE c.isDeleted = true")
     long countDeletedCampaigns();
 
-    @Query("SELECT SUM(c.goal) FROM Campaign c WHERE c.isDeleted = false")
+    // FIXED SUM QUERIES WITH NULL SAFETY
+    @Query("SELECT COALESCE(SUM(c.goal), 0) FROM Campaign c WHERE c.isDeleted = false")
     BigDecimal sumTotalGoals();
 
-    @Query("SELECT SUM(c.raised) FROM Campaign c WHERE c.isDeleted = false")
+    @Query("SELECT COALESCE(SUM(c.raised), 0) FROM Campaign c WHERE c.isDeleted = false")
     BigDecimal sumTotalRaised();
 
-    @Query("SELECT SUM(c.donorCount) FROM Campaign c WHERE c.isDeleted = false")
+    @Query("SELECT COALESCE(SUM(c.donorCount), 0) FROM Campaign c WHERE c.isDeleted = false")
     Integer sumTotalDonors();
 
     // Top performing campaigns
@@ -125,9 +126,9 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long> {
     @Query("SELECT c FROM Campaign c WHERE c.isDeleted = false AND " +
             "CASE " +
             "   WHEN c.isDeleted = true THEN 'DELETED' " +
-            "   WHEN c.isActive = false THEN 'INACTIVE' " +
             "   WHEN c.endDate < CURRENT_DATE THEN 'EXPIRED' " +
             "   WHEN c.raised >= c.goal THEN 'COMPLETED' " +
+            "   WHEN c.isActive = false THEN 'INACTIVE' " +
             "   ELSE 'ACTIVE' " +
             "END = :status")
     List<Campaign> findByStatus(@Param("status") String status);
