@@ -118,21 +118,48 @@ log.info("type instance of CampaignType: {}", request.getType() instanceof Campa
     @Transactional
     @CacheEvict(value = {"campaigns", "activeCampaigns", "campaignStats"}, allEntries = true)
     public CampaignResponseDTO updateCampaignStatus(Long id, boolean isActive) {
+        log.info("=== TOGGLE SERVICE START ===");
         log.info("Updating campaign status for ID: {} to {}", id, isActive);
 
         Campaign campaign = findCampaignById(id);
 
-        if (campaign.isActive() == isActive) {
-            throw new IllegalStateException("Campaign is already " + (isActive ? "active" : "inactive"));
+        // Log current state
+        log.info("Found campaign: {}", campaign.getTitle());
+        log.info("Current campaign.isActive(): {}", campaign.isActive());
+        log.info("Requested new status: {}", isActive);
+
+        // Validate business rules for activation only
+        if (isActive) {
+            if (campaign.isExpired()) {
+                log.error("Cannot activate expired campaign. End date: {}", campaign.getEndDate());
+                throw new IllegalStateException("Cannot activate an expired campaign. Campaign ended on " + campaign.getEndDate());
+            }
+            if (campaign.isDeleted()) {
+                log.error("Cannot activate deleted campaign");
+                throw new IllegalStateException("Cannot activate a deleted campaign");
+            }
         }
 
-        if (isActive && campaign.isExpired()) {
-            throw new IllegalStateException("Cannot activate an expired campaign");
-        }
-
+        // Update status and timestamp
+        log.info("Setting campaign active status from {} to {}", campaign.isActive(), isActive);
         campaign.setActive(isActive);
+        campaign.setUpdatedAt(LocalDateTime.now());
+
+        // Save to database
         Campaign savedCampaign = campaignRepository.save(campaign);
-        return mapToCampaignResponseDTO(savedCampaign);
+        log.info("Campaign saved. New isActive value: {}", savedCampaign.isActive());
+
+        // Verify the save worked by querying again
+        Campaign verifiedCampaign = campaignRepository.findById(id).orElse(null);
+        if (verifiedCampaign != null) {
+            log.info("Verification: isActive in database: {}", verifiedCampaign.isActive());
+        }
+
+        CampaignResponseDTO result = mapToCampaignResponseDTO(savedCampaign);
+        log.info("Mapped DTO isActive: {}", result.isActive());
+        log.info("=== TOGGLE SERVICE END ===");
+
+        return result;
     }
 
     @Override
@@ -179,49 +206,79 @@ log.info("type instance of CampaignType: {}", request.getType() instanceof Campa
     public CampaignStatsDTO getCampaignStatistics() {
         log.debug("Calculating campaign statistics");
 
-        long totalCampaigns = campaignRepository.countActiveCampaigns();
-        long activeCampaigns = campaignRepository.countActiveCampaignsWithActiveStatus();
-        long inactiveCampaigns = campaignRepository.countInactiveCampaigns();
-        long expiredCampaigns = campaignRepository.countExpiredCampaigns();
-        long deletedCampaigns = campaignRepository.countDeletedCampaigns();
+        // Get all non-deleted campaigns for accurate statistics
+        List<Campaign> allCampaigns = campaignRepository.findAllByIsDeletedFalse();
 
-        BigDecimal totalGoal = campaignRepository.sumTotalGoals() != null ?
-                campaignRepository.sumTotalGoals() : BigDecimal.ZERO;
-        BigDecimal totalRaised = campaignRepository.sumTotalRaised() != null ?
-                campaignRepository.sumTotalRaised() : BigDecimal.ZERO;
-        Integer totalDonors = campaignRepository.sumTotalDonors() != null ?
-                campaignRepository.sumTotalDonors() : 0;
+        // Calculate counts using stream operations for better accuracy
+        long totalCampaigns = allCampaigns.size();
+
+        long activeCampaigns = allCampaigns.stream()
+                .filter(c -> c.isActive() && !c.isExpired())
+                .count();
+
+        long inactiveCampaigns = allCampaigns.stream()
+                .filter(c -> !c.isActive() && !c.isExpired())
+                .count();
+
+        long expiredCampaigns = allCampaigns.stream()
+                .filter(Campaign::isExpired)
+                .count();
+
+        // Use repository methods with null safety
+        BigDecimal totalGoal = campaignRepository.sumTotalGoals();
+        if (totalGoal == null) totalGoal = BigDecimal.ZERO;
+
+        BigDecimal totalRaised = campaignRepository.sumTotalRaised();
+        if (totalRaised == null) totalRaised = BigDecimal.ZERO;
+
+        Integer totalDonors = campaignRepository.sumTotalDonors();
+        if (totalDonors == null) totalDonors = 0;
 
         // Calculate average progress
-        BigDecimal averageProgress = totalGoal.compareTo(BigDecimal.ZERO) > 0 ?
-                totalRaised.divide(totalGoal, 4, BigDecimal.ROUND_HALF_UP).multiply(new BigDecimal(100)) :
-                BigDecimal.ZERO;
+        BigDecimal averageProgress = BigDecimal.ZERO;
+        if (totalGoal.compareTo(BigDecimal.ZERO) > 0) {
+            averageProgress = totalRaised.divide(totalGoal, 4, BigDecimal.ROUND_HALF_UP)
+                    .multiply(new BigDecimal(100));
+        }
 
         // Calculate average donation amount
-        BigDecimal averageDonationAmount = totalDonors > 0 ?
-                totalRaised.divide(new BigDecimal(totalDonors), 2, BigDecimal.ROUND_HALF_UP) :
-                BigDecimal.ZERO;
+        BigDecimal averageDonationAmount = BigDecimal.ZERO;
+        if (totalDonors > 0) {
+            averageDonationAmount = totalRaised.divide(new BigDecimal(totalDonors), 2, BigDecimal.ROUND_HALF_UP);
+        }
 
         // Get most popular campaign type
         String mostPopularType = getMostPopularCampaignType();
 
-        // Get highest goal and raised amounts
-        List<Campaign> topByGoal = campaignRepository.findTopCampaignsByRaisedAmount(Pageable.ofSize(1));
-        List<Campaign> topByRaised = campaignRepository.findTopCampaignsByRaisedAmount(Pageable.ofSize(1));
+        // Get highest amounts using stream operations
+        BigDecimal highestGoal = allCampaigns.stream()
+                .map(Campaign::getGoal)
+                .filter(goal -> goal != null)
+                .max(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
 
-        BigDecimal highestGoal = topByGoal.isEmpty() ? BigDecimal.ZERO : topByGoal.get(0).getGoal();
-        BigDecimal highestRaised = topByRaised.isEmpty() ? BigDecimal.ZERO : topByRaised.get(0).getRaised();
+        BigDecimal highestRaised = allCampaigns.stream()
+                .map(Campaign::getRaised)
+                .filter(raised -> raised != null)
+                .max(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
 
-        // Count campaigns needing attention
-        long campaignsNeedingAttention = campaignRepository
-                .findCampaignsNeedingAttention(LocalDate.now().plusDays(7), 25.0).size();
+        // Count campaigns needing attention (active, ending soon, low progress)
+        LocalDate deadline = LocalDate.now().plusDays(7);
+        long campaignsNeedingAttention = allCampaigns.stream()
+                .filter(c -> c.isActive() && !c.isExpired())
+                .filter(c -> c.getEndDate().isBefore(deadline) || c.getEndDate().equals(deadline))
+                .filter(c -> c.getProgressPercentage() < 25.0)
+                .count();
+
+        log.debug("Campaign statistics calculated - Total: {}, Active: {}, Inactive: {}, Expired: {}",
+                totalCampaigns, activeCampaigns, inactiveCampaigns, expiredCampaigns);
 
         return CampaignStatsDTO.builder()
                 .totalCampaigns(totalCampaigns)
                 .activeCampaigns(activeCampaigns)
                 .inactiveCampaigns(inactiveCampaigns)
                 .expiredCampaigns(expiredCampaigns)
-                .deletedCampaigns(deletedCampaigns)
                 .totalGoal(totalGoal)
                 .totalRaised(totalRaised)
                 .totalDonors(totalDonors)
@@ -255,7 +312,10 @@ log.info("type instance of CampaignType: {}", request.getType() instanceof Campa
                 .collect(Collectors.toList());
     }
 
-    // Helper methods
+    // ===========================================
+    // HELPER METHODS
+    // ===========================================
+
     private Campaign findCampaignById(Long id) {
         return campaignRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Campaign not found with id: " + id));
@@ -328,11 +388,12 @@ log.info("type instance of CampaignType: {}", request.getType() instanceof Campa
     }
 
     private String determineCampaignStatus(Campaign campaign) {
+        // Priority: DELETED > EXPIRED > COMPLETED > ACTIVE/INACTIVE
         if (campaign.isDeleted()) return "DELETED";
-        if (!campaign.isActive()) return "INACTIVE";
         if (campaign.isExpired()) return "EXPIRED";
         if (campaign.isGoalAchieved()) return "COMPLETED";
-        return "ACTIVE";
+        // Now check isActive correctly
+        return campaign.isActive() ? "ACTIVE" : "INACTIVE";
     }
 
     private CampaignResponseDTO mapToCampaignResponseDTO(Campaign campaign) {
