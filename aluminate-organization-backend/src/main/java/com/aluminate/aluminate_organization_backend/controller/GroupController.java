@@ -202,4 +202,18 @@ public class GroupController {
                     .body(new ApiResponse("Failed to retrieve event count", null));
         }
     }
+
+    // MEMBER ONLY
+    @GetMapping("/member/group/get/by-member/{memberId}")
+    public ResponseEntity<ResponseWrapper<List<GroupResponseDTO>>> getGroupsByMember(@PathVariable Long memberId) {
+        try {
+            List<GroupResponseDTO> groups = groupsService.getGroupsByMember(memberId);
+            ResponseWrapper<List<GroupResponseDTO>> responseWrapper = new ResponseWrapper<>(true, "Data fetched success", groups);
+            return ResponseEntity.ok(responseWrapper);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(NOT_FOUND).body(new ResponseWrapper<>(false, e.getMessage(), null));
+        } catch (Exception e) {
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(new ResponseWrapper<>(false, "Failed to fetch groups", null));
+        }
+    }
 }
