@@ -66,11 +66,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         logger.info("JwtAuthenticationFilter called for path: " + path);
 
-
+        String finalPrefix = "/" + apiPrefix;
         String cleanPath = path.trim();
-        if (!cleanPath.startsWith(apiPrefix + "/admin/") &&
-                !cleanPath.startsWith(apiPrefix + "/member/") &&
-                !cleanPath.startsWith(apiPrefix + "/common/")) {
+        if (!cleanPath.startsWith(finalPrefix + "/admin/") &&
+                !cleanPath.startsWith(finalPrefix + "/member/") &&
+                !cleanPath.startsWith(finalPrefix + "/common/")) {
             logger.info("Skipping JWT authentication for non-admin/member path: " + cleanPath);
             filterChain.doFilter(request, response);
             return;
@@ -192,8 +192,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private boolean requiresMembershipFee(String uri) {
         // Customize which routes require active package
         // Example: only require active paid membership on sensitive routes
-
-         return uri.startsWith(apiPrefix + "/member/");
+        String finalPrefix = "/" + apiPrefix;
+         return uri.startsWith(finalPrefix + "/member/");
 
     }
 
