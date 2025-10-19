@@ -63,11 +63,11 @@ services:
       MONGO_URI: mongodb://mongo_root:mongo_password@mongo:27017/aluminate_chat?authSource=admin
 
       # External URLs point to the Traefik route (localhost:80/global_path)
-      GLOBAL_BACKEND_URL: "http://${TRAEFIK_HOST}:${TRAEFIK_PORT}${API_PREFIX_GLOBAL}"
-
+      GLOBAL_BACKEND_URL: "http://global-backend:${GLOBAL_PORT}"
+      ORG_SLUG: ${ORG_SLUG}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
-      API_PREFIX: ${API_PREFIX}
+      API_PREFIX: "/${API_PREFIX}"
       API_PREFIX_GLOBAL: ${API_PREFIX_GLOBAL}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       SPRING_ORGANIZATION_PRIVATE_KEY: ${SPRING_ORGANIZATION_PRIVATE_KEY}
