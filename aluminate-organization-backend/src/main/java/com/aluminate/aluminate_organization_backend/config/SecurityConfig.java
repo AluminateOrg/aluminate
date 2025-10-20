@@ -14,14 +14,22 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
- * Configuration class for Spring Security.
- * This class defines the security filter chain and configures HTTP security settings.
- */
-@Configuration
-public class SecurityConfig {
+     * Configuration class for Spring Security.
+     * This class defines the security filter chain and configures HTTP security settings.
+     */
+    @Configuration
+    public class SecurityConfig {
 
-    private final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+        /**
+         * Defines the security filter chain bean.
+         * Configures HTTP security to allow all requests without authentication.
+         *
+         * @param http the HttpSecurity object used to configure security settings
+         * @return the configured SecurityFilterChain
+         * @throws Exception if an error occurs while building the security filter chain
+         */
+        private final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
+        private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Value("${api.prefix}")
     private String apiPrefix;
