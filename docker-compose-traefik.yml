@@ -1,0 +1,33 @@
+version: '3.9'
+
+services:
+  # -------------------------------------------------------------------
+  # 0. TRAEFIK (Reverse Proxy and Entrypoint)
+  # -------------------------------------------------------------------
+  traefik:
+    image: traefik:v2.10
+    container_name: organization-traefik-global
+    restart: unless-stopped
+    command:
+      # Enable Traefik API and Dashboard (insecure access for simplicity)
+      - --api.insecure=true 
+      # Enable Docker provider to auto-discover services with labels
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      # Define the entrypoint for web traffic
+      - --entrypoints.web.address=:${TRAEFIK_PORT}
+    ports:
+      # Map the external host port to the container's port 80 (defined by TRAEFIK_PORT)
+      - "${TRAEFIK_PORT}:80" 
+     
+    volumes:
+      # Required for Traefik to read Docker events and labels
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      # Attach Traefik to the network shared by all services
+      - aluminate-network
+
+networks:
+  aluminate-network:
+    external: true
+    name: aluminate-global-network

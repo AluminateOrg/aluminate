@@ -27,9 +27,8 @@ package com.aluminate.aluminate_organization_backend.config;
             CorsConfiguration config = new CorsConfiguration();
 
             // Specifies the allowed origins for cross-origin requests
-            config.setAllowedOrigins(List.of("http://localhost:3000","http://localhost:3001",
-                    "http://website-frontend:3000",
-                    "http://admin-frontend:3000"));
+            config.addAllowedOriginPattern("*"); // use this instead of setAllowedOrigins() to support wildcards
+
 
             // Specifies the allowed HTTP methods for cross-origin requests
             config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));

@@ -35,6 +35,9 @@ public class AuthController {
     private String organizationPrivateKeyENV;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @Value("${ORG_SLUG}")
+    private String orgSlug;
+
     private PrivateKey organizationPrivateKey;
 
     @PostConstruct
@@ -87,11 +90,13 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<ResponseWrapper<String>> logout(HttpServletResponse response) {
         // Clear cookies by setting maxAge to 0
+        String cookiePath = "/" + orgSlug;
+
         ResponseCookie jwtCookie = ResponseCookie.from("jwt", "")
                 .httpOnly(true)
                 .secure(false)
                 .sameSite("Strict")
-                .path("/")
+                .path(cookiePath)
                 .maxAge(0)
                 .build();
 
@@ -99,7 +104,7 @@ public class AuthController {
                 .httpOnly(false)
                 .secure(false)
                 .sameSite("Strict")
-                .path("/")
+                .path(cookiePath)
                 .maxAge(0)
                 .build();
 
@@ -107,7 +112,7 @@ public class AuthController {
                 .httpOnly(false)
                 .secure(false)
                 .sameSite("Strict")
-                .path("/")
+                .path(cookiePath)
                 .maxAge(0)
                 .build();
 
