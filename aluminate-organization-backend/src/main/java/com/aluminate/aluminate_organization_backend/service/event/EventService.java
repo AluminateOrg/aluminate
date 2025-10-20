@@ -1,3 +1,4 @@
+// src/main/java/com/aluminate/aluminate_organization_backend/service/event/EventService.java
 package com.aluminate.aluminate_organization_backend.service.event;
 
 import com.aluminate.aluminate_organization_backend.dto.event.*;
@@ -6,36 +7,54 @@ import com.aluminate.aluminate_organization_backend.model.Event;
 import com.aluminate.aluminate_organization_backend.model.EventStatus;
 import com.aluminate.aluminate_organization_backend.model.Member;
 import com.aluminate.aluminate_organization_backend.model.MemberEvent;
+import com.aluminate.aluminate_organization_backend.model.NotificationRequest;
 import com.aluminate.aluminate_organization_backend.repository.EventRepository;
 import com.aluminate.aluminate_organization_backend.repository.MemberEventRepository;
 import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
+import com.aluminate.aluminate_organization_backend.service.notification.NotificationProducer;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-public class EventService implements IEventService{
+public class EventService implements IEventService {
+
     private final EventRepository eventRepository;
     private final MemberRepository memberRepository;
     private final MemberEventRepository memberEventRepository;
 
-    public EventService(EventRepository eventRepository, MemberRepository memberRepository, MemberEventRepository memberEventRepository) {
+    // Notify members on publish
+    private final NotificationProducer notificationProducer;
+
+    // Defaults are safe; override via application.properties if needed
+    @Value("${aluminate.tenant-id:org-demo}")
+    private String tenantId;
+
+    // Used to build the CTA link inside the notification
+    @Value("${aluminate.portal-base-url:http://localhost:3000}")
+    private String portalBaseUrl;
+
+    public EventService(EventRepository eventRepository,
+                        MemberRepository memberRepository,
+                        MemberEventRepository memberEventRepository,
+                        NotificationProducer notificationProducer) {
         this.eventRepository = eventRepository;
         this.memberRepository = memberRepository;
         this.memberEventRepository = memberEventRepository;
-
+        this.notificationProducer = notificationProducer;
     }
 
     @Override
     public Event createEvent(CreateEventRequest request) {
         if (eventRepository.existsByTitleAndIsDeletedFalse(request.getTitle())) {
-            throw new IllegalArgumentException("Event with this title '" + request.getTitle() +"' already exists!");
+            throw new IllegalArgumentException("Event with this title '" + request.getTitle() + "' already exists!");
         }
 
         Event event = Event.builder()
@@ -70,20 +89,17 @@ public class EventService implements IEventService{
             throw new IllegalStateException("Cannot edit a deleted event");
         }
 
-        // Enforce unique title for not-deleted events (excluding this one)
         if (request.getTitle() != null
                 && !request.getTitle().equals(event.getTitle())
                 && eventRepository.existsByTitleAndIsDeletedFalseAndIdNot(request.getTitle(), id)) {
             throw new IllegalArgumentException("Another active event with this title already exists");
         }
 
-        // Capacity constraint: new maxParticipants must be >= currentParticipants
         if (request.getMaxParticipants() != null
                 && request.getMaxParticipants() < event.getCurrentParticipants()) {
             throw new IllegalStateException("maxParticipants cannot be less than currentParticipants");
         }
 
-        // Apply updates (only if provided)
         if (request.getTitle() != null) event.setTitle(request.getTitle());
         if (request.getDescription() != null) event.setDescription(request.getDescription());
         if (request.getType() != null) event.setType(request.getType());
@@ -101,7 +117,6 @@ public class EventService implements IEventService{
         Event saved = eventRepository.save(event);
         return convertToDTO(saved);
     }
-
 
     @Override
     public List<EventResponseDTO> getAllEvents() {
@@ -144,20 +159,50 @@ public class EventService implements IEventService{
         if (EventStatus.PUBLISHED.equals(event.getStatus())) {
             throw new IllegalStateException("Event is already published");
         }
-
         if (EventStatus.CANCELLED.equals(event.getStatus())) {
             throw new IllegalStateException("Cannot publish a cancelled event");
         }
-
         if (EventStatus.COMPLETED.equals(event.getStatus())) {
             throw new IllegalStateException("Cannot publish a completed event");
         }
 
         event.setStatus(EventStatus.PUBLISHED);
         Event savedEvent = eventRepository.save(event);
+
+        // === Broadcast in-app notifications to members ===
+        // (Scope this query to your tenant/active members if needed)
+        List<Member> recipients = memberRepository.findAll();
+
+        String start = (savedEvent.getStartDate() != null ? savedEvent.getStartDate().toString() : "")
+                + (savedEvent.getStartTime() != null ? (" " + savedEvent.getStartTime().toString()) : "");
+
+        // Link users to your member events page (or deep-link if you have one)
+        String ctaUrl = portalBaseUrl + "/org/member/events";
+
+        for (Member m : recipients) {
+            NotificationRequest req = NotificationRequest.builder()
+                    .messageId(UUID.randomUUID().toString())
+                    .tenantId(tenantId)
+                    .memberId(String.valueOf(m.getId()))
+                    // Use Set to match typical model; avoids List→Set cast issues
+                    .channels(Set.of("IN_APP"))
+                    .type("EVENT_PUBLISHED")
+                    .template("event_published")
+                    .data(Map.of(
+                            "eventId", String.valueOf(savedEvent.getId()),
+                            "eventName", savedEvent.getTitle(),
+                            "start", start,
+                            "ctaUrl", ctaUrl
+                    ))
+                    .dedupeKey("EVENT_PUBLISHED:" + savedEvent.getId() + ":" + m.getId())
+                    .createdAt(Instant.now())
+                    .build();
+
+            notificationProducer.send(req); // -> Kafka topic via NotificationProducer
+        }
+
         return convertToDTO(savedEvent);
     }
-
 
     @Override
     public EventResponseDTO cancelEvent(Long id) {
@@ -167,13 +212,34 @@ public class EventService implements IEventService{
         if (EventStatus.CANCELLED.equals(event.getStatus())) {
             throw new IllegalStateException("Event is already cancelled");
         }
-
         if (EventStatus.COMPLETED.equals(event.getStatus())) {
             throw new IllegalStateException("Cannot cancel a completed event");
         }
 
         event.setStatus(EventStatus.CANCELLED);
         Event savedEvent = eventRepository.save(event);
+
+        // OPTIONAL: notify members about cancellation
+        // List<Member> recipients = memberRepository.findAll();
+        // for (Member m : recipients) {
+        //     NotificationRequest req = NotificationRequest.builder()
+        //             .messageId(UUID.randomUUID().toString())
+        //             .tenantId(tenantId)
+        //             .memberId(String.valueOf(m.getId()))
+        //             .channels(Set.of("IN_APP"))
+        //             .type("EVENT_CANCELLED")
+        //             .template("event_cancelled")
+        //             .data(Map.of(
+        //                     "eventId", String.valueOf(savedEvent.getId()),
+        //                     "eventName", savedEvent.getTitle(),
+        //                     "ctaUrl", portalBaseUrl + "/org/member/events"
+        //             ))
+        //             .dedupeKey("EVENT_CANCELLED:" + savedEvent.getId() + ":" + m.getId())
+        //             .createdAt(Instant.now())
+        //             .build();
+        //     notificationProducer.send(req);
+        // }
+
         return convertToDTO(savedEvent);
     }
 
@@ -186,15 +252,8 @@ public class EventService implements IEventService{
             throw new IllegalStateException("Event is already deleted");
         }
 
-        // Perform soft delete
         event.setDeleted(true);
         event.setDeletedAt(LocalDateTime.now());
-
-//        // If the event has any members registered (MemberEvent relationships), you might want to handle them
-//        if (!event.getMemberEvents().isEmpty()) {
-//            // You might want to notify members that the event is deleted
-//            // This is where you'd add that logic
-//        }
 
         Event savedEvent = eventRepository.save(event);
         return convertToDTO(savedEvent);
@@ -229,12 +288,10 @@ public class EventService implements IEventService{
             if (link.isAttending()) {
                 throw new IllegalStateException("Member is already attending this event");
             }
-            // Not attending yet -> mark attending and increment count
             link.setAttending(true);
             link.setSetRSVP(true);
             memberEventRepository.save(link);
         } else {
-            // New attendance link
             MemberEvent newLink = new MemberEvent();
             newLink.setMember(member);
             newLink.setEvent(event);
@@ -269,12 +326,10 @@ public class EventService implements IEventService{
             throw new IllegalStateException("Member is not attending this event");
         }
 
-        // Flip attendance off
         link.setAttending(false);
         link.setSetRSVP(false);
         memberEventRepository.save(link);
 
-        // Decrement count safely
         if (event.getCurrentParticipants() > 0) {
             event.setCurrentParticipants(event.getCurrentParticipants() - 1);
         }
@@ -283,10 +338,8 @@ public class EventService implements IEventService{
         return convertToDTO(savedEvent);
     }
 
-
     @Override
     public List<MemberAttendanceDTO> getEventAttendance(Long eventId) {
-        // validate event exists
         eventRepository.findById(eventId)
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found with id: " + eventId));
 
@@ -301,7 +354,6 @@ public class EventService implements IEventService{
 
     @Override
     public List<EventResponseDTO> getMemberAttendances(Long memberId) {
-        // validate member exists
         memberRepository.findById(memberId)
                 .orElseThrow(() -> new ResourceNotFoundException("Member not found with id: " + memberId));
 
@@ -314,22 +366,18 @@ public class EventService implements IEventService{
 
     @Override
     public List<EventAttendanceStatusDTO> getMemberEventAttendanceStatuses(Long memberId) {
-        // Ensure member exists
         memberRepository.findById(memberId)
                 .orElseThrow(() -> new ResourceNotFoundException("Member not found with id: " + memberId));
 
-        // Load all non-deleted events
         List<Event> events = eventRepository.findAll().stream()
                 .filter(e -> !e.isDeleted())
                 .toList();
 
-        // Load all attending links for the member
         Set<Long> attendedEventIds = memberEventRepository.findAllByMemberIdAndAttendingTrue(memberId).stream()
                 .map(MemberEvent::getEvent)
                 .map(Event::getId)
                 .collect(Collectors.toSet());
 
-        // Build statuses for each event
         return events.stream()
                 .map(e -> new EventAttendanceStatusDTO(e.getId(), attendedEventIds.contains(e.getId())))
                 .toList();
@@ -340,11 +388,9 @@ public class EventService implements IEventService{
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found with id: " + eventId));
 
-        // Only include attendees currently marked as attending
         List<MemberEvent> links = memberEventRepository.findAllByEvent_IdAndIsAttendingTrue(eventId);
 
         StringBuilder sb = new StringBuilder();
-        // CSV header (extend with any fields you have on Member)
         sb.append("EventId,EventTitle,MemberId,MemberName,MemberEmail,RSVP,Attending\n");
 
         for (MemberEvent me : links) {
@@ -366,11 +412,8 @@ public class EventService implements IEventService{
 
     private static String safeCsv(String value) {
         if (value == null) return "";
-        // Escape quotes by doubling, wrap in quotes if contains comma, quote, or newline
         boolean needsQuotes = value.contains(",") || value.contains("\"") || value.contains("\n") || value.contains("\r");
         String escaped = value.replace("\"", "\"\"");
         return needsQuotes ? "\"" + escaped + "\"" : escaped;
     }
-
-
 }
