@@ -328,7 +328,9 @@ public class MentorService {
                         .menteeName(member.getName())
                         .status(program.getStatus())
                         .date(program.getDate())
+                        .hourly_rate(program.getMentor().getHourlyRate())
                         .time(program.getTime())
+                        .isPaid(program.isPaid())
                         .sessionDuration("1 hour") // Placeholder, can be calculated based on program data
                         .build())
                 .collect(Collectors.toList());
@@ -364,6 +366,13 @@ public class MentorService {
         mentorProgram.setTime(mentorSessionAcceptDTO.getTime());
         mentorProgram.setStatus("SCHEDULED");
         mentorProgramRepository.save(mentorProgram);
+        return true;
+    }
+
+    public boolean updateProgramIsPaid(Long id) {
+        MentorProgram mentorProgram = mentorProgramRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Mentor program not found"));
+        mentorProgram.setPaid(true);
         return true;
     }
 }

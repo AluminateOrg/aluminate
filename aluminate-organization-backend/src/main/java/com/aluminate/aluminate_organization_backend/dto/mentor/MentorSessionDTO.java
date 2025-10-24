@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -20,8 +21,10 @@ public class MentorSessionDTO {
     private String status;
     private LocalDate date;
     private LocalTime time;
+    private BigDecimal hourly_rate;
     private String sessionDuration;
 //    private String feedback;
     private LocalDateTime createdAt;
     private String menteeEmail;
+    private boolean isPaid;
 }

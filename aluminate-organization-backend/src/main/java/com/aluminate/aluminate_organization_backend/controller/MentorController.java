@@ -181,7 +181,7 @@ public class MentorController {
             System.out.println("Sessions: " + sessions);
             return ResponseEntity.ok(sessions);
         } catch (Exception e) {
-            return ResponseEntity.status(400).body(null);
+            return ResponseEntity.status(501).body(null);
         }
     }
 
@@ -230,5 +230,19 @@ public class MentorController {
 
         return ResponseEntity.ok(response);
     }
-    
+
+    @GetMapping("/member/mentor/is-paid/{id}")
+    public ResponseEntity<ResponseWrapper<Boolean>> updateIsPaid(@PathVariable Long id) {
+        try {
+            boolean isPaid = mentorService.updateProgramIsPaid(id);
+            if (isPaid) {
+                return ResponseEntity.ok(new ResponseWrapper<>(true, "Mentor program is paid", true));
+            } else {
+                return ResponseEntity.ok(new ResponseWrapper<>(true, "Mentor program is not paid", false));
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }

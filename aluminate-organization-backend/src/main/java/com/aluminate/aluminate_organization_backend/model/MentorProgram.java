@@ -45,5 +45,5 @@ public class MentorProgram {
     private LocalDateTime createdAt;
     private String programUrl;
     private String status;
-
+    private boolean isPaid = false;
 }
