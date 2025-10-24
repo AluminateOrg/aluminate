@@ -28,4 +28,6 @@ public interface MemberGroupRepository extends JpaRepository<MemberGroup, Long> 
     Optional<MemberGroup> findByMember_IdAndGroup_Id(Long memberId, Long groupId);
 
     List<MemberGroup> findByRequestStatus(GroupJoinRequestStatus groupJoinRequestStatus);
+
+    List<MemberGroup> findByMember_IdAndRequestStatus(Long memberId, GroupJoinRequestStatus status);
 }
