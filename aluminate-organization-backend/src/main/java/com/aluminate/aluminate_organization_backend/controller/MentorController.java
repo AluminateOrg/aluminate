@@ -86,6 +86,16 @@ public class MentorController {
         }
     }
 
+    @GetMapping("/member/mentor/get-mentor-details/{id}")
+    public ResponseEntity<List<MentorApplicationDTO>> getAllApprovedMentorsExceptSelf(@PathVariable Long id) {
+        try {
+            List<MentorApplicationDTO> mentors = mentorService.getAllApprovedMentorsExceptSelf(id);
+            return ResponseEntity.ok(mentors);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @PostMapping("/admin/mentor/dis-approve")
     public ResponseEntity<Map<String, Object>> disApproveMentor(@RequestBody MentorActiveDeactiveRequest request) {
         Map<String, Object> response = new HashMap<>();
@@ -196,7 +206,7 @@ public class MentorController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/common/mentor/is-mentor/{id}")
+    @GetMapping("/member/mentor/is-mentor/{id}")
     public ResponseEntity<ResponseWrapper<Boolean>> isMentor(@PathVariable Long id) {
         logger.info("Checking if member with ID {} is a mentor", id);
         boolean isMentor = mentorService.isMentor(id);

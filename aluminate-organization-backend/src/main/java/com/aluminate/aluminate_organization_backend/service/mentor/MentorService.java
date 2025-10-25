@@ -375,4 +375,15 @@ public class MentorService {
         mentorProgram.setPaid(true);
         return true;
     }
+
+    public List<MentorApplicationDTO> getAllApprovedMentorsExceptSelf(Long id) {
+        List<Mentor> approvedMentors = mentorRepository.findAll().stream()
+                .filter(mentor -> mentor.isApproved() && !mentor.getMember().getId().equals(id))
+                .toList();
+
+        return getMentorApplicationDTOS(approvedMentors);
+    }
+
+
+
 }
