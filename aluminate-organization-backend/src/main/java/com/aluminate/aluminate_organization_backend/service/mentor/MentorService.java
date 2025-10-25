@@ -210,12 +210,15 @@ public class MentorService {
                         .orElseThrow(() -> new RuntimeException("Member not found")))
                 .collect(Collectors.toSet());
 
+        Member createdBy = memberRepository.findById(requestDTO.getCreatedBy())
+                .orElseThrow(() -> new RuntimeException("Member not found"));
 
         //save to the mentor program table
         MentorProgram mentorProgram = MentorProgram.builder()
                 .mentor(mentor)
                 .participants(participants)
                 .createdAt(LocalDateTime.now())
+                .createdBy(createdBy)
                 .status("PENDING")
                 .build();
 
@@ -385,5 +388,7 @@ public class MentorService {
     }
 
 
-
+//    public List<MentorSessionDTO> getAllSessionsExceptSelf(Long userId) {
+//
+//    }
 }
