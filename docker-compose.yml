@@ -1,12 +1,6 @@
-version: '3.9'
-
 services:
-  # -------------------------------------------------------------------
-  # 1. DATABASE (PostgreSQL)
-  # -------------------------------------------------------------------
   database:
     image: postgres:15
-    container_name: organization-postgres
     restart: always
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -14,109 +8,46 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
-    # Expose container port only, no host port mapping needed unless external access required
-    ports:
-      - 5432
     networks:
       - aluminate-network
 
-  # -------------------------------------------------------------------
-  # 2. MONGO DB
-  # -------------------------------------------------------------------
-  mongo:
-    image: mongo:6.0
-    container_name: organization-mongo
-    restart: unless-stopped
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: mongo_root
-      MONGO_INITDB_ROOT_PASSWORD: mongo_password
-    volumes:
-      - mongo_data:/data/db
-    ports:
-      - 27017
-    networks:
-      - aluminate-network
-
-  # -------------------------------------------------------------------
-  # 3. REDIS
-  # -------------------------------------------------------------------
-  redis:
-    image: redis:7
-    container_name: organization-redis
-    restart: unless-stopped
-    volumes:
-      - redis_data:/data
-    ports:
-      - 6379
-    networks:
-      - aluminate-network
-
-  # -------------------------------------------------------------------
-  # 4. BACKEND (Spring Boot Organization Backend)
-  # -------------------------------------------------------------------
   backend:
     build:
       context: ./aluminate-organization-backend
       dockerfile: Dockerfile
-    ports:
-      - 8098
     depends_on:
       - database
-      - redis
-      - mongo
     environment:
-      ORGANIZATION_PORT: ${ORGANIZATION_PORT}
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       SPRING_REDIS_HOST: ${SPRING_REDIS_HOST}
       SPRING_REDIS_PORT: ${SPRING_REDIS_PORT}
-      API_PREFIX: ${API_PREFIX}
-      API_PREFIX_GLOBAL: ${API_PREFIX_GLOBAL}
-      GLOBAL_BACKEND_URL: "${DOMAIN_LINK}:${GLOBAL_PORT}"
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: ${SPRING_KAFKA_BOOTSTRAP_SERVERS}
       SPRING_ORGANIZATION_PRIVATE_KEY: ${SPRING_ORGANIZATION_PRIVATE_KEY}
       SPRING_GLOBAL_PUBLIC_KEY: ${SPRING_GLOBAL_PUBLIC_KEY}
-      JWT_SECRET: ${JWT_SECRET}
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
-      PAYHERE_MERCHANT_ID: ${PAYHERE_MERCHANT_ID}
-      PAYHERE_SECRET: ${PAYHERE_SECRET}
-      MONGO_URI: mongodb://mongo_root:mongo_password@mongo:27017/aluminate_chat?authSource=admin
-      NEXT_PUBLIC_GLOBAL_PUBLIC_KEY: ${SPRING_GLOBAL_PUBLIC_KEY}
-      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST}
-      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT}
-      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME}
-      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
+    ports:
+      - "8098:8098"
     networks:
       - aluminate-network
 
-  # -------------------------------------------------------------------
-  # 5. FRONTEND (Next.js Organization Frontend)
-  # -------------------------------------------------------------------
   frontend:
     build:
       context: ./aluminate-organization-frontend
-      dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_BACKEND_URL: "${DOMAIN_LINK}:${ORGANIZATION_PORT}"
-        NEXT_PUBLIC_API_PREFIX: "${API_PREFIX}"
-        NEXT_PUBLIC_ORGANIZATION_PUBLIC_KEY: ${NEXT_PUBLIC_ORGANIZATION_PUBLIC_KEY}
-        NEXT_PUBLIC_WS_URL: "${NEXT_PUBLIC_WS_LINK}:${ORGANIZATION_PORT}"
-        NEXT_PUBLIC_PAYHERE_MERCHANT_ID: ${NEXT_PUBLIC_PAYHERE_MERCHANT_ID}
     ports:
-      - 3000
+      - "3002:3000"
+    volumes:
+      - ./aluminate-organization-frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true
     depends_on:
       - backend
     networks:
       - aluminate-network
 
-# ============================================================
-# VOLUMES & NETWORKS
-# ============================================================
 volumes:
   pgdata:
-  mongo_data:
-  redis_data:
 
 networks:
   aluminate-network:

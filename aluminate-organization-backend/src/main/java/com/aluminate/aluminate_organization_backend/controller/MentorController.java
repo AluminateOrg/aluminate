@@ -255,13 +255,14 @@ public class MentorController {
         }
     }
 
-//    @GetMapping("/member/mentor/get-all-sessions-admin/{userId}")
-//    public ResponseEntity<List<MentorSessionDTO>> getAllSessionsExceptSelf(@PathVariable Long userId) {
-//        try {
-//            List<MentorSessionDTO> sessions = mentorService.getAllSessionsExceptSelf(userId);
-//        } catch (Exception e) {
-//            throw new RuntimeException(e);
-//        }
-//    }
+    @GetMapping("/member/mentor/get-all-sessions-admin/{userId}")
+    public ResponseEntity<List<MentorSessionDTO>> getAllSessionsExceptSelf(@PathVariable Long userId) {
+        try {
+            List<MentorSessionDTO> sessions = mentorService.getAllSessionsExceptSelf(userId);
+            return ResponseEntity.ok(sessions);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
 }
