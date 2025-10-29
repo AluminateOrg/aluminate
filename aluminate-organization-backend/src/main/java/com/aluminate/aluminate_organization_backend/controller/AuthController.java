@@ -90,8 +90,12 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<ResponseWrapper<String>> logout(HttpServletResponse response) {
         // Clear cookies by setting maxAge to 0
-        String cookiePath = "/" + orgSlug;
 
+        //production
+//        String cookiePath = "/" + orgSlug;
+
+        //dev
+        String cookiePath = "/";
         ResponseCookie jwtCookie = ResponseCookie.from("jwt", "")
                 .httpOnly(true)
                 .secure(false)
