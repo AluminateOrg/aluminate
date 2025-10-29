@@ -176,8 +176,10 @@ public class MentorController {
     //get all sessions by mentor side
     @GetMapping("/member/mentor/get-all-sessions/{mentorId}")
     public ResponseEntity<List<MentorSessionDTO>> getAllSessions(@PathVariable Long mentorId) {
+        logger.info("Fetching sessions for mentor with ID: {}", mentorId);
         try {
             List<MentorSessionDTO> sessions = mentorService.getAllSessionsByMentor(mentorId);
+            logger.info("session fetched: {}", sessions);
             return ResponseEntity.ok(sessions);
         } catch (Exception e) {
             return ResponseEntity.status(500).body(null);

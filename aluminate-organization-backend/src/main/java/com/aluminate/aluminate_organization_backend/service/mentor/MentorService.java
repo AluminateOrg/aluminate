@@ -8,6 +8,8 @@ import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
 import com.aluminate.aluminate_organization_backend.repository.MentorProgramRepository;
 import com.aluminate.aluminate_organization_backend.repository.MentorRepository;
 import com.aluminate.aluminate_organization_backend.service.EmailService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +29,7 @@ public class MentorService {
     private final MemberRepository memberRepository;
     private final MentorProgramRepository mentorProgramRepository;
     private final EmailService emailService;
+    private final Logger logger = LoggerFactory.getLogger(MentorService.class);
 
     public MentorService(MentorRepository mentorRepository, MemberRepository memberRepository, MentorProgramRepository mentorProgramRepository, EmailService emailService) {
         this.mentorRepository = mentorRepository;
@@ -276,10 +279,12 @@ public class MentorService {
     //get all sessions by mentor
     @Transactional(readOnly = true)
     public List<MentorSessionDTO> getAllSessionsByMentor(Long mentorId) {
-        Mentor mentor = mentorRepository.findById(mentorId)
+
+        Mentor mentor = mentorRepository.findByMemberId(mentorId)
                 .orElseThrow(() -> new RuntimeException("Mentor not found"));
 
-        return mentorProgramRepository.findAllByMentorId(mentorId).stream()
+        List<MentorSessionDTO> sessions = mentorProgramRepository.findAll().stream()
+                .filter(program -> program.getMentor().getId().equals(mentor.getId()))
                 .map(program -> MentorSessionDTO.builder()
                         .id(program.getId())
                         .programUrl(program.getProgramUrl())
@@ -297,10 +302,16 @@ public class MentorService {
                         .status(program.getStatus())
                         .date(program.getDate())
                         .time(program.getTime())
-                        .sessionDuration("1 hour")
+                        .isPaid(program.isPaid())
+                        .createdBy(program.getCreatedBy().getId())
+                        .hourly_rate(mentor.getHourlyRate())
+                        .sessionDuration("1 hour") // Placeholder, can be calculated based on program data
                         .createdAt(program.getCreatedAt())
                         .build())
                 .collect(Collectors.toList());
+
+        return sessions;
+
     }
 
     @Transactional(readOnly = true)
@@ -324,6 +335,7 @@ public class MentorService {
                         .date(program.getDate())
                         .hourly_rate(program.getMentor().getHourlyRate())
                         .time(program.getTime())
+                        .createdBy(program.getCreatedBy().getId())
                         .isPaid(program.isPaid())
                         .sessionDuration("1 hour") // Placeholder, can be calculated based on program data
                         .build())
@@ -366,7 +378,9 @@ public class MentorService {
     public boolean updateProgramIsPaid(Long id) {
         MentorProgram mentorProgram = mentorProgramRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Mentor program not found"));
+        logger.info("Updating isPaid for MentorProgram id: " + id);
         mentorProgram.setPaid(true);
+        mentorProgramRepository.save(mentorProgram);
         return true;
     }
 

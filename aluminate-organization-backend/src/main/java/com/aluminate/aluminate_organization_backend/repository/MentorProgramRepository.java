@@ -16,6 +16,6 @@ public interface MentorProgramRepository extends JpaRepository<MentorProgram, Lo
     @Query("SELECT mp FROM MentorProgram mp JOIN mp.participants p WHERE p.id = :memberId")
     List<MentorProgram> findAllByParticipantId(@Param("memberId") Long memberId);
 
-
-    Collection<MentorProgram> findAllByMentorId(Long mentorId);
+    //find all the programs by using created_by field which is user id and program participants
+//    Collection<MentorProgram> findByCreatedByAndProgram(Long mentorId);
 }

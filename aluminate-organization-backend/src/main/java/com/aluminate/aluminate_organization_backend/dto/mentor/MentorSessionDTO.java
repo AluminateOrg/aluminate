@@ -27,4 +27,5 @@ public class MentorSessionDTO {
     private LocalDateTime createdAt;
     private String menteeEmail;
     private boolean isPaid;
+    private Long createdBy;
 }
