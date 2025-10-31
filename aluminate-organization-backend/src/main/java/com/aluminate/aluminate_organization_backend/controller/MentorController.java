@@ -86,6 +86,16 @@ public class MentorController {
         }
     }
 
+    @GetMapping("/member/mentor/get-mentor-details/{id}")
+    public ResponseEntity<List<MentorApplicationDTO>> getAllApprovedMentorsExceptSelf(@PathVariable Long id) {
+        try {
+            List<MentorApplicationDTO> mentors = mentorService.getAllApprovedMentorsExceptSelf(id);
+            return ResponseEntity.ok(mentors);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @PostMapping("/admin/mentor/dis-approve")
     public ResponseEntity<Map<String, Object>> disApproveMentor(@RequestBody MentorActiveDeactiveRequest request) {
         Map<String, Object> response = new HashMap<>();
@@ -166,8 +176,10 @@ public class MentorController {
     //get all sessions by mentor side
     @GetMapping("/member/mentor/get-all-sessions/{mentorId}")
     public ResponseEntity<List<MentorSessionDTO>> getAllSessions(@PathVariable Long mentorId) {
+        logger.info("Fetching sessions for mentor with ID: {}", mentorId);
         try {
             List<MentorSessionDTO> sessions = mentorService.getAllSessionsByMentor(mentorId);
+            logger.info("session fetched: {}", sessions);
             return ResponseEntity.ok(sessions);
         } catch (Exception e) {
             return ResponseEntity.status(500).body(null);
@@ -181,7 +193,7 @@ public class MentorController {
             System.out.println("Sessions: " + sessions);
             return ResponseEntity.ok(sessions);
         } catch (Exception e) {
-            return ResponseEntity.status(400).body(null);
+            return ResponseEntity.status(501).body(null);
         }
     }
 
@@ -196,7 +208,7 @@ public class MentorController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/common/mentor/is-mentor/{id}")
+    @GetMapping("/member/mentor/is-mentor/{id}")
     public ResponseEntity<ResponseWrapper<Boolean>> isMentor(@PathVariable Long id) {
         logger.info("Checking if member with ID {} is a mentor", id);
         boolean isMentor = mentorService.isMentor(id);
@@ -230,5 +242,29 @@ public class MentorController {
 
         return ResponseEntity.ok(response);
     }
-    
+
+    @GetMapping("/member/mentor/is-paid/{id}")
+    public ResponseEntity<ResponseWrapper<Boolean>> updateIsPaid(@PathVariable Long id) {
+        try {
+            boolean isPaid = mentorService.updateProgramIsPaid(id);
+            if (isPaid) {
+                return ResponseEntity.ok(new ResponseWrapper<>(true, "Mentor program is paid", true));
+            } else {
+                return ResponseEntity.ok(new ResponseWrapper<>(true, "Mentor program is not paid", false));
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @GetMapping("/member/mentor/get-all-sessions-admin/{userId}")
+    public ResponseEntity<List<MentorSessionDTO>> getAllSessionsExceptSelf(@PathVariable Long userId) {
+        try {
+            List<MentorSessionDTO> sessions = mentorService.getAllSessionsExceptSelf(userId);
+            return ResponseEntity.ok(sessions);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }
