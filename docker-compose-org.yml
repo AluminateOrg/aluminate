@@ -13,7 +13,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - ${ORG_SLUG}_pgdata:/var/lib/postgresql/data
     networks:
       - aluminate-network
 
@@ -28,7 +28,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: mongo_root
       MONGO_INITDB_ROOT_PASSWORD: mongo_password
     volumes:
-      - mongo_data:/data/db
+      - ${ORG_SLUG}_mongo_data:/data/db
     networks:
       - aluminate-network
 
@@ -40,7 +40,7 @@ services:
     container_name: ${ORG_SLUG}-redis
     restart: unless-stopped
     volumes:
-      - redis_data:/data
+      - ${ORG_SLUG}_redis_data:/data
     networks:
       - aluminate-network
 
@@ -49,20 +49,19 @@ services:
   # -------------------------------------------------------------------
   backend:
     build:
-      context: ./aluminate-organization-backend
+      context: /app/aluminate/aluminate-organization-backend
       dockerfile: Dockerfile
     depends_on:
       - database
       - redis
       - mongo
     environment:
-      ORGANIZATION_PORT: 8098 # Internal container port
+      ORGANIZATION_PORT: 8098
       SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/aluminatedb
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
       MONGO_URI: mongodb://mongo_root:mongo_password@mongo:27017/aluminate_chat?authSource=admin
 
-      # External URLs point to the Traefik route (localhost:80/global_path)
       GLOBAL_BACKEND_URL: "http://global-backend:${GLOBAL_PORT}"
       ORG_SLUG: ${ORG_SLUG}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
@@ -82,13 +81,11 @@ services:
       SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME}
       SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
 
-    # TRAEFIK LABELS for Backend API (routes under /{ORG_SLUG}/backend/...)
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${ORG_SLUG}-backend.rule=Host(`${TRAEFIK_HOST}`) && PathPrefix(`/${ORG_SLUG}/backend`)"
       - "traefik.http.routers.${ORG_SLUG}-backend.entrypoints=web"
       - "traefik.http.services.${ORG_SLUG}-backend.loadbalancer.server.port=8098"
-      # Strip the external prefix '/{ORG_SLUG}/backend' before forwarding to the backend container
       - "traefik.http.middlewares.${ORG_SLUG}-backend-strip.stripprefix.prefixes=/${ORG_SLUG}/backend"
       - "traefik.http.routers.${ORG_SLUG}-backend.middlewares=${ORG_SLUG}-backend-strip"
 
@@ -100,32 +97,25 @@ services:
   # -------------------------------------------------------------------
   frontend:
     build:
-      context: ./aluminate-organization-frontend
+      context: /app/aluminate/aluminate-organization-frontend
       dockerfile: Dockerfile
       args:
-        # Pass ORG_SLUG as a build argument
         ORG_SLUG: ${ORG_SLUG}
-        # Frontend should call the backend via Traefik under /{ORG_SLUG}/backend
         NEXT_PUBLIC_BACKEND_URL: "http://${TRAEFIK_HOST}:${TRAEFIK_PORT}/${ORG_SLUG}/backend"
         NEXT_PUBLIC_API_PREFIX: "${API_PREFIX}"
         NEXT_PUBLIC_ORGANIZATION_PUBLIC_KEY: ${NEXT_PUBLIC_ORGANIZATION_PUBLIC_KEY}
         NEXT_PUBLIC_WS_URL: "ws://${TRAEFIK_HOST}:${TRAEFIK_PORT}/${ORG_SLUG}"
         NEXT_PUBLIC_PAYHERE_MERCHANT_ID: ${NEXT_PUBLIC_PAYHERE_MERCHANT_ID}
-        
     depends_on:
       - backend
-
     labels:
       - "traefik.enable=true"
-      # Match UI paths under /{ORG_SLUG} but NOT /{ORG_SLUG}/backend
       - "traefik.http.routers.${ORG_SLUG}-frontend.rule=Host(`${TRAEFIK_HOST}`) && PathPrefix(`/${ORG_SLUG}`) && !PathPrefix(`/${ORG_SLUG}/backend`)"
       - "traefik.http.routers.${ORG_SLUG}-frontend.entrypoints=web"
       - "traefik.http.routers.${ORG_SLUG}-frontend.priority=10"
       - "traefik.http.services.${ORG_SLUG}-frontend.loadbalancer.server.port=3000"
-      # Strip only the '/{ORG_SLUG}' prefix before forwarding to Next.js
       - "traefik.http.middlewares.${ORG_SLUG}-strip-prefix.stripprefix.prefixes=/${ORG_SLUG}"
       - "traefik.http.routers.${ORG_SLUG}-frontend.middlewares=${ORG_SLUG}-strip-prefix"
-
     networks:
       - aluminate-network
 
@@ -133,9 +123,9 @@ services:
 # VOLUMES & NETWORKS
 # ============================================================
 volumes:
-  pgdata:
-  mongo_data:
-  redis_data:
+  ${ORG_SLUG}_pgdata:
+  ${ORG_SLUG}_mongo_data:
+  ${ORG_SLUG}_redis_data:
 
 networks:
   aluminate-network:

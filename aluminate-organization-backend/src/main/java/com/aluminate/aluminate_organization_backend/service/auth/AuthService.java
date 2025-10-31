@@ -303,7 +303,11 @@ public class AuthService {
         String sessionId = UUID.randomUUID().toString();
         String csrfToken = csrfTokenService.generateAndStoreToken(sessionId);
 
-        String cookiePath = "/" + orgSlug;
+        //for production
+//        String cookiePath = "/" + orgSlug;
+
+        //for local testing
+        String cookiePath = "/";
 
         ResponseCookie jwtCookie = ResponseCookie.from("jwt", token)
                 .httpOnly(true)
