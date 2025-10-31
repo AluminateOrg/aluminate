@@ -53,6 +53,9 @@ public class AuthService {
     @Value("${encryption.global.public-key}")
     private String globalPublicKeyENV;
 
+    @Value("${ORG_SLUG}")
+    private String orgSlug;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
     private PrivateKey orgPrivateKey;
     private PublicKey globalPublicKey;
@@ -300,11 +303,17 @@ public class AuthService {
         String sessionId = UUID.randomUUID().toString();
         String csrfToken = csrfTokenService.generateAndStoreToken(sessionId);
 
+        //for production
+//        String cookiePath = "/" + orgSlug;
+
+        //for local testing
+        String cookiePath = "/";
+
         ResponseCookie jwtCookie = ResponseCookie.from("jwt", token)
                 .httpOnly(true)
                 .secure(false)
                 .sameSite("Strict")
-                .path("/")
+                .path(cookiePath)
                 .maxAge(Duration.ofDays(1))
                 .build();
 
@@ -312,7 +321,7 @@ public class AuthService {
                 .httpOnly(false)
                 .secure(false)
                 .sameSite("Strict")
-                .path("/")
+                .path(cookiePath)
                 .maxAge(Duration.ofDays(1))
                 .build();
 
@@ -320,7 +329,7 @@ public class AuthService {
                 .httpOnly(false)
                 .secure(false)
                 .sameSite("Strict")
-                .path("/")
+                .path(cookiePath)
                 .maxAge(Duration.ofDays(1))
                 .build();
 
