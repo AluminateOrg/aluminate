@@ -17,4 +17,6 @@ public interface GlobalBackendAuthClient {
     @PostMapping("/auth/verify-admin")
     ResponseEntity<GlobalAuthResponse> verifyAdminCredentials(
             @RequestBody String encryptedRequest);
+
+//    @PostMapping("/")
 }

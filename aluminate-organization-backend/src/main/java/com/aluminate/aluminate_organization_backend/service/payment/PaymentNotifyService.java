@@ -16,6 +16,9 @@ package com.aluminate.aluminate_organization_backend.service.payment;
     import java.util.Objects;
     import java.util.Optional;
 
+    import static com.aluminate.aluminate_organization_backend.model.PaymentCategory.DONATION;
+    import static org.springframework.messaging.simp.stomp.StompHeaders.SUBSCRIPTION;
+
 
 /**
      * Service for handling payment notifications from PayHere.
@@ -33,6 +36,7 @@ package com.aluminate.aluminate_organization_backend.service.payment;
         private final MemberRepository memberRepository;
         private final CampaignRepository campaignRepository;
         private final DonationRepository donationRepository;
+        private final IncomingTransactionRepository incomingTransactionRepository;
 
         /**
          * Constructs a PaymentNotifyService with required repositories.
@@ -47,13 +51,15 @@ package com.aluminate.aluminate_organization_backend.service.payment;
                                     OrganizationRepository organizationRepository,
                                     MemberRepository memberRepository,
                                     CampaignRepository campaignRepository,
-                                    DonationRepository donationRepository
+                                    DonationRepository donationRepository,
+                                    IncomingTransactionRepository incomingTransactionRepository
         ) {
             this.transactionRepository = transactionRepository;
             this.organizationRepository = organizationRepository;
             this.memberRepository = memberRepository;
             this.campaignRepository = campaignRepository;
             this.donationRepository = donationRepository;
+            this.incomingTransactionRepository = incomingTransactionRepository;
         }
 
         /**
@@ -86,11 +92,31 @@ package com.aluminate.aluminate_organization_backend.service.payment;
 
                         transactionRepository.save(transaction);
                         log.info("Transaction saved! Order ID: {}", request.getOrder_id());
-                        // Publish event to Kafka or any other message broker if needed
-                        //logic to handle rest of the payment success
+                        // Handle domain-specific logic based on transaction category
+                        handleDomainSpecificLogic(transaction, request);
 
-                        //get campaign & member
-                        //get member
+                        //add notification by kafka and send email
+
+                        // Additional processing can be done here
+
+
+
+                    } else {
+                        log.warn("Transaction not found for ID: {}", request.getOrder_id());
+                    }
+                } else {
+                    log.warn("Payment verification FAILED for order {}", request.getOrder_id());
+                }
+            } catch (Exception e) {
+                log.error("Error while verifying PayHere payment notification", e);
+            }
+        }
+
+        private void handleDomainSpecificLogic(Transaction transaction, PaymentNotifyRequest request) {
+            // Implement any domain-specific logic here if needed
+            switch (transaction.getCategory()) {
+                case DONATION:
+                    try {
                         Optional<Member> optionalMember = memberRepository.findByEmail(request.getCustom_2());
                         if (optionalMember.isEmpty()) {
                             throw new IllegalArgumentException("Member not found for email: " + request.getCustom_2());
@@ -127,16 +153,35 @@ package com.aluminate.aluminate_organization_backend.service.payment;
                         Donation savedDonation = donationRepository.save(donation);
                         log.info("Donation saved with ID: {}", savedDonation.getId());
 
+                        //save incoming transaction
+                        IncomingTransaction incomingTransaction = IncomingTransaction.builder()
+                                .amount(new BigDecimal(request.getPayhere_amount()))
+                                .currency(request.getPayhere_currency())
+                                .transactionStatus(TransactionStatus.SUCCESS)
+                                .category(DONATION)
+                                .organization(transaction.getOrganization())
+                                .transaction(transaction)
+                                .staged(false)
+                                .ack(false)
+                                .build();
+                        incomingTransactionRepository.save(incomingTransaction);
 
-                    } else {
-                        log.warn("Transaction not found for ID: {}", request.getOrder_id());
+
+
                     }
-                } else {
-                    log.warn("Payment verification FAILED for order {}", request.getOrder_id());
-                }
-            } catch (Exception e) {
-                log.error("Error while verifying PayHere payment notification", e);
+                    catch (Exception e) {
+                        log.error("Error while processing donation for transaction ID: {}", transaction.getId(), e);
+                    }
+
+                    break;
+                case MENTORSHIP:
+                    // Handle Mentorship-specific logic
+                    break;
+                default:
+                    log.warn("Unknown transaction category: {}", transaction.getCategory());
+
             }
+
         }
 
         /**
