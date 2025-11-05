@@ -187,6 +187,7 @@ public class AuthService {
 
 
                 Organization organization = Organization.builder()
+                        .id(organizationDTO.getId())
                         .organizationName(organizationDTO.getOrganizationName())
                         .maxMemberCount(organizationDTO.getMaxMemberCount())
                         .currentMemberCount(organizationDTO.getCurrentMemberCount())

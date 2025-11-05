@@ -11,7 +11,7 @@ import lombok.Setter;
 @Data
 @AllArgsConstructor
 public class OrganizationGlobalDTO {
-
+    private Long id;
     private String organizationName;
     private int maxMemberCount;
     private int currentMemberCount;

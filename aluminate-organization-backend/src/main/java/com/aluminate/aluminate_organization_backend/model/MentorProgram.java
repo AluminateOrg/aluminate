@@ -2,6 +2,7 @@ package com.aluminate.aluminate_organization_backend.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.security.core.userdetails.User;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -39,11 +40,17 @@ public class MentorProgram {
     @JoinColumn(name = "payment_id", referencedColumnName = "id")
     private Payment payment;
 
+    //create a field for save user that created the program
+    //fpr each program there is one user that created it
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "created_by", referencedColumnName = "id")
+    private Member createdBy;
+
 
     private LocalDate date;
     private LocalTime time;
     private LocalDateTime createdAt;
     private String programUrl;
     private String status;
-
+    private boolean isPaid = false;
 }

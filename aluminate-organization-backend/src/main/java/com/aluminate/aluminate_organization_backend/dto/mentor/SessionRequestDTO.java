@@ -10,4 +10,5 @@ import java.util.Set;
 public class SessionRequestDTO {
     private Long mentorId;
     private Set<Long> userId;
+    private Long createdBy;
 }

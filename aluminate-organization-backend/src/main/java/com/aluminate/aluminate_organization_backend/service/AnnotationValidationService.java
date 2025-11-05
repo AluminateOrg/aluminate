@@ -6,16 +6,17 @@ import jakarta.validation.Validator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 
 @Service
 public class AnnotationValidationService {
-    @Autowired
-    private Validator validator;
+
+    private final Validator validator;
+
+    public AnnotationValidationService(Validator validator) {
+        this.validator = validator;
+    }
 
     public List<MemberRowDTO> validateRows(List<MemberRowDTO> rows) {
         for(MemberRowDTO row : rows) {
@@ -27,6 +28,9 @@ public class AnnotationValidationService {
                     errors.put(v.getPropertyPath().toString(), v.getMessage());
                 }
                 row.setErrors(errors);
+            } else {
+                row.setStatus("valid");
+                row.setErrors(Collections.emptyMap());
             }
         }
         return rows;
