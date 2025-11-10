@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>{{organization.name}} \- Mentor Application Received</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <style>
+        /* Client resets */
+        html, body { margin:0; padding:0; height:100% !important; width:100% !important; }
+        * { -ms-text-size-adjust:100%; -webkit-text-size-adjust:100%; }
+        table, td { mso-table-lspace:0pt; mso-table-rspace:0pt; }
+        img { -ms-interpolation-mode:bicubic; border:0; outline:none; text-decoration:none; }
+        /* Container */
+        .wrapper { width:100%; background:#f6f9fc; padding:24px 0; }
+        .container { width:100%; max-width:600px; margin:0 auto; background:#ffffff; border-radius:8px; overflow:hidden; }
+        .header { background:#0d6efd; color:#ffffff; padding:24px; font-family:Arial, Helvetica, sans-serif; }
+        .content { padding:24px; font-family:Arial, Helvetica, sans-serif; color:#1f2937; font-size:14px; line-height:1.6; }
+        .muted { color:#6b7280; }
+        .list { margin:12px 0 0 0; padding:0; list-style:none; }
+        .list li { margin:4px 0; }
+        .badge { display:inline-block; padding:6px 10px; border-radius:999px; background:#e5f0ff; color:#0d6efd; font-size:12px; }
+        .cta { display:inline-block; background:#0d6efd; color:#ffffff !important; text-decoration:none; padding:12px 18px; border-radius:6px; font-weight:bold; }
+        .footer { padding:20px 24px; font-family:Arial, Helvetica, sans-serif; color:#6b7280; font-size:12px; }
+        .divider { height:1px; background:#e5e7eb; border:0; margin:24px 0; }
+        @media (prefers-color-scheme: dark) {
+            .wrapper { background:#0b0f17 !important; }
+            .container { background:#0f172a !important; }
+            .header { background:#0b5ed7 !important; }
+            .content { color:#e5e7eb !important; }
+            .footer { color:#9ca3af !important; }
+            .divider { background:#374151 !important; }
+        }
+        /* Gmail iOS link fix */
+        a[x-apple-data-detectors] { color:inherit !important; text-decoration:none !important; }
+        /* Preheader hide */
+        .preheader { display:none !important; visibility:hidden; opacity:0; color:transparent; height:0; width:0; overflow:hidden; mso-hide:all; }
+    </style>
+</head>
+<body>
+<!-- Preheader text -->
+<div class="preheader">We received your mentor application at {{organization.name}}. We will reply within 3 to 5 business days.</div>
+
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%" class="wrapper">
+    <tr>
+        <td align="center">
+            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" class="container">
+                <!-- Header -->
+                <tr>
+                    <td class="header">
+                        <table role="presentation" width="100%">
+                            <tr>
+                                <td align="left" style="font-size:18px; font-weight:bold;">
+                                    {{organization.name}}
+                                </td>
+                                <td align="right">
+                                    <span class="badge">Application received</span>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+
+                <!-- Body -->
+                <tr>
+                    <td class="content">
+                        <p>Hi {{member.name}},</p>
+                        <p>Thanks for applying to become a mentor at <strong>{{organization.name}}</strong>. We received your application on <strong>{{application.date}}</strong>.</p>
+                        <p>Our team will review your application and get back to you within <strong>3 to 5 business days</strong>.</p>
+
+                        <hr class="divider">
+
+                        <p style="margin:0 0 6px 0;"><strong>Application summary</strong></p>
+                        <ul class="list">
+                            <li><strong>Name:</strong> {{member.name}}</li>
+                            <li><strong>Email:</strong> {{member.email}}</li>
+                            <li><strong>Years of experience:</strong> {{mentor.yearsOfExperience}}</li>
+                            <li><strong>Primary skills:</strong> {{mentor.skills}}</li>
+                            <li><strong>Languages:</strong> {{mentor.languages}}</li>
+                            <li><strong>Hourly rate:</strong> {{mentor.hourlyRate}}</li>
+                        </ul>
+
+                        <hr class="divider">
+
+                        <p style="margin:0 0 6px 0;"><strong>What happens next</strong></p>
+                        <ul class="list">
+                            <li>We verify your profile and availability.</li>
+                            <li>If approved, you receive onboarding details and mentoring guidelines.</li>
+                        </ul>
+
+                        <div style="margin:20px 0 6px 0;">
+                            <a class="cta" href="{{organization.website}}" target="_blank" rel="noopener">Visit dashboard</a>
+                        </div>
+
+                        <p class="muted" style="margin-top:16px;">If you have questions, contact us at <a href="mailto:{{organization.supportEmail}}">{{organization.supportEmail}}</a>.</p>
+                    </td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                    <td class="footer">
+                        <div>{{organization.name}}</div>
+                        <div><a href="{{organization.website}}" style="color:inherit; text-decoration:underline;" target="_blank" rel="noopener">{{organization.website}}</a></div>
+                        <div>{{organization.address}} | for further contact</div>
+                        <div style="margin-top:8px;">You received this email because you applied to be a mentor. If this was not you, please ignore this message.</div>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

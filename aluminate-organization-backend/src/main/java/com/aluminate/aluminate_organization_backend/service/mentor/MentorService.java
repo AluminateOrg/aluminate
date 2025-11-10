@@ -4,6 +4,7 @@ import com.aluminate.aluminate_organization_backend.dto.mentor.*;
 import com.aluminate.aluminate_organization_backend.model.Member;
 import com.aluminate.aluminate_organization_backend.model.Mentor;
 import com.aluminate.aluminate_organization_backend.model.MentorProgram;
+import com.aluminate.aluminate_organization_backend.model.Organization;
 import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
 import com.aluminate.aluminate_organization_backend.repository.MentorProgramRepository;
 import com.aluminate.aluminate_organization_backend.repository.MentorRepository;
@@ -44,6 +45,8 @@ public class MentorService {
         Member member = memberRepository.findById(request.getMemberId())
                 .orElseThrow(() -> new RuntimeException("Member not found"));
 
+        Organization organization = member.getOrganization();
+
         System.out.println("Member details: " + member);
 
         if (mentorRepository.existsByMember(member)) throw  new RuntimeException("Member already exists");
@@ -69,6 +72,9 @@ public class MentorService {
                 .build();
 
         Mentor saved = mentorRepository.save(mentor);
+
+        //send email
+        emailService.sendMentorApplicationEmail(member, organization, saved);
 
         return MentorResponseDTO.builder()
                 .id(saved.getId())
@@ -129,6 +135,11 @@ public class MentorService {
         Mentor mentor = mentorRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Mentor application not found"));
         if (mentor.isApproved()) throw new RuntimeException("Mentor application is already approved");
+
+        Member member = mentor.getMember();
+        Organization organization = member.getOrganization();
+
+        emailService.sendMentorApprovalEmail(member, organization);
 
         mentor.setApproved(true);
         mentorRepository.save(mentor);
