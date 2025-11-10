@@ -21,7 +21,11 @@ public class Mentor {
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", referencedColumnName = "id")
+    @JoinColumn(name = "member_id", referencedColumnName = "id" ,
+            foreignKey = @ForeignKey(
+                    name = "fk_mentor_member",
+                    foreignKeyDefinition = "FOREIGN KEY (member_id) REFERENCES member(id) ON UPDATE CASCADE ON DELETE CASCADE"
+            ))
     private Member member;
 
 
