@@ -156,7 +156,9 @@ public class MentorService {
         mentor.getLanguages().clear();
         mentor.getSkills().clear();
         mentorRepository.saveAndFlush(mentor);
-
+        Member member = mentor.getMember();
+        Organization organization = member.getOrganization();
+        emailService.sendMentorRejectionEmail(member, organization);
         mentorRepository.delete(mentor);
         return true;
     }
@@ -208,6 +210,7 @@ public class MentorService {
         }
         mentor.setApproved(false);
         mentorRepository.save(mentor);
+        emailService.sendDeactiveEmailForMentor(mentor.getMember(), mentor.getMember().getOrganization());
         return true;
     }
 

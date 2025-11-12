@@ -126,4 +126,46 @@ public class EmailService {
         }
     }
 
+    public void sendMentorRejectionEmail(Member member, Organization organization) {
+        try {
+            String template = getHtmlTemplates("templates/mentor/mentor-rejection.html");
+            String html = template
+                    .replace("{{organization.name}}", safe(organization.getOrganizationName()))
+                    .replace("{{member.name}}", safe(member.getName()))
+                    .replace("{{decision.date}}", LocalDate.now().toString())
+                    .replace("{{rejection.reason}}", "After careful consideration, we regret to inform you that your application does not meet our current requirements.")
+                    .replace("{{organization.supportEmail}}", safe(organization.getAdmin().getEmail()))
+                    .replace("{{organization.website}}", safe(organization.getOrganizationName()));
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, "utf-8");
+            helper.setTo(member.getEmail());
+            helper.setSubject("Your mentor application has been rejected - " + organization.getOrganizationName());
+            helper.setText(html, true);
+            mailSender.send(message);
+        } catch (Exception e)  {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void sendDeactiveEmailForMentor(Member member, Organization organization) {
+        try {
+            String template = getHtmlTemplates("templates/mentor/mentor-deactive.html");
+            String html = template
+                    .replace("{{organization.name}}", safe(organization.getOrganizationName()))
+                    .replace("{{member.name}}", safe(member.getName()))
+                    .replace("{{deactivation.date}}", LocalDate.now().toString())
+                    .replace("{{deactivation.reason}}", "Please be informed that your mentor account")
+                    .replace("{{organization.supportEmail}}", safe(organization.getAdmin().getEmail()))
+                    .replace("{{organization.website}}", safe(organization.getOrganizationName()));
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, "utf-8");
+            helper.setTo(member.getEmail());
+            helper.setSubject("Your mentor account has been deactivated - " + organization.getOrganizationName());
+            helper.setText(html, true);
+            mailSender.send(message);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }
