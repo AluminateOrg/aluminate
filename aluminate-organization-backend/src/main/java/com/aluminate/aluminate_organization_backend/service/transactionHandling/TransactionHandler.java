@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -34,9 +35,12 @@ import java.util.List;
 public class TransactionHandler {
     private final IncomingTransactionRepository incomingTransactionRepository;
     private final StagedTransactionRepository stagedTransactionRepository;
-    private final GlobalTransactionTicketRepository globalTransactionTicketRepository;@Value("${encryption.organization.private-key}")
-    private final GlobalBackendAuthClient globalBackendAuthClient;
+    private final GlobalTransactionTicketRepository globalTransactionTicketRepository;
+
+    @Value("${encryption.organization.private-key}")
     private String orgPrivateKeyENV;
+
+    private final GlobalBackendAuthClient globalBackendAuthClient;
 
     @Value("${encryption.global.public-key}")
     private String globalPublicKeyENV;
@@ -104,7 +108,7 @@ public class TransactionHandler {
             log.info("Retrieved staged transactions for ticketing: " + stagedTransactions.size());
 
             //create a unique key for the ticket
-            String ticketKey = "ALUMINATE-ORG-"+ stagedTransactions.get(0).getOrganization().getId() + "-" + System.currentTimeMillis();
+            String ticketKey = "A-ORG-"+ stagedTransactions.get(0).getOrganization().getId() + System.currentTimeMillis();
 
             //sum amount for each unticketed staged transaction & assign ticket key
             for(StagedTransaction stagedTransaction : stagedTransactions){
@@ -199,7 +203,6 @@ public class TransactionHandler {
     }
 
     //send to global server
-    @Transactional
     public void handleGlobalServer(GlobalTransactionTicket globalTransactionTicket){
         try{
             //encrypt object -> amount & key
@@ -221,6 +224,9 @@ public class TransactionHandler {
             //call the other server using feign client
             ResponseEntity<Boolean> response = globalBackendAuthClient.syncOrgTransactionTickets(globalMainTransactionTicketEncrypted);
             if(response.getBody() != null && response.getBody()){
+                //update the ticket as sent
+                globalTransactionTicket.setSend(true);
+                globalTransactionTicketRepository.save(globalTransactionTicket);
                 log.info("Successfully sent Global Transaction Ticket to Global Server for key: " + globalTransactionTicket.getKey());
             } else {
                 log.error("Failed to send Global Transaction Ticket to Global Server for key: " + globalTransactionTicket.getKey());

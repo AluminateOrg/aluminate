@@ -20,6 +20,6 @@ public interface GlobalBackendAuthClient {
 
     @PostMapping("/public/payment/syncOrgTransactionTickets")
     ResponseEntity<Boolean> syncOrgTransactionTickets(
-            @RequestBody String encryptedRequest
+            @RequestBody String encryptedTicket
     );
 }

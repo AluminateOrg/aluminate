@@ -34,6 +34,9 @@ public class GlobalTransactionTicket {
     @Builder.Default
     private Boolean ack = false;
 
+    @Builder.Default
+    private Boolean send = false;
+
     @Column(unique = true, nullable = false)
     private String key;
 
