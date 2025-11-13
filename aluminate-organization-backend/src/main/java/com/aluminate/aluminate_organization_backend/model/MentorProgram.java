@@ -24,7 +24,11 @@ public class MentorProgram {
 
     /** Many programs can be created by one mentor */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "mentor_id", referencedColumnName = "id")
+    @JoinColumn(name = "mentor_id", referencedColumnName = "id", nullable = false,
+            foreignKey = @ForeignKey(
+                    name = "fk_mentorprogram_mentor",
+                    foreignKeyDefinition = "FOREIGN KEY (mentor_id) REFERENCES mentor(id) ON UPDATE CASCADE ON DELETE CASCADE"
+            ))
     private Mentor mentor;
 
     /** Many members can join many programs */
@@ -33,6 +37,15 @@ public class MentorProgram {
             name = "program_participants",
             joinColumns = @JoinColumn(name = "program_id"),
             inverseJoinColumns = @JoinColumn(name = "member_id")
+            // set on update cascade and on delete cascade
+            , foreignKey = @ForeignKey(
+                    name = "fk_programparticipants_program",
+                    foreignKeyDefinition = "FOREIGN KEY (program_id) REFERENCES mentor_program(id) ON UPDATE CASCADE ON DELETE CASCADE"
+            ),
+            inverseForeignKey = @ForeignKey(
+                    name = "fk_programparticipants_member",
+                    foreignKeyDefinition = "FOREIGN KEY (member_id) REFERENCES member(id) ON UPDATE CASCADE ON DELETE CASCADE"
+            )
     )
     private Set<Member> participants = new HashSet<>();
 

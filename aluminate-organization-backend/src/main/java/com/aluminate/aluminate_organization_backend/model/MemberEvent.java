@@ -16,7 +16,11 @@ public class MemberEvent {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "member_id", nullable = false)
+    @JoinColumn(name = "member_id", nullable = false,
+    foreignKey = @ForeignKey(
+            name = "fk_memberevent_member",
+            foreignKeyDefinition = "FOREIGN KEY (member_id) REFERENCES member(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    ))
     private Member member;
 
     @ManyToOne

@@ -18,5 +18,8 @@ public interface GlobalBackendAuthClient {
     ResponseEntity<GlobalAuthResponse> verifyAdminCredentials(
             @RequestBody String encryptedRequest);
 
-//    @PostMapping("/")
+    @PostMapping("/public/payment/syncOrgTransactionTickets")
+    ResponseEntity<Boolean> syncOrgTransactionTickets(
+            @RequestBody String encryptedTicket
+    );
 }
