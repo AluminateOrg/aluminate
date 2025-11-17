@@ -1,29 +1,21 @@
 package com.aluminate.aluminate_organization_backend.service.transactionHandling;
 
 import com.aluminate.aluminate_organization_backend.config.GlobalAuth.GlobalBackendAuthClient;
+import com.aluminate.aluminate_organization_backend.config.ResponseWrapper;
 import com.aluminate.aluminate_organization_backend.config.util.RSAEncryptionUtil;
-import com.aluminate.aluminate_organization_backend.dto.login.GlobalAuthRequest;
 import com.aluminate.aluminate_organization_backend.dto.transactionSync.GlobalMainTransactionTicket;
-import com.aluminate.aluminate_organization_backend.dto.transactionSync.KeyAndAmount;
-import com.aluminate.aluminate_organization_backend.model.GlobalTransactionTicket;
-import com.aluminate.aluminate_organization_backend.model.IncomingTransaction;
-import com.aluminate.aluminate_organization_backend.model.Organization;
-import com.aluminate.aluminate_organization_backend.model.StagedTransaction;
+import com.aluminate.aluminate_organization_backend.dto.transactionSync.EncryptedTicketKey;
+import com.aluminate.aluminate_organization_backend.model.*;
 import com.aluminate.aluminate_organization_backend.repository.GlobalTransactionTicketRepository;
 import com.aluminate.aluminate_organization_backend.repository.IncomingTransactionRepository;
 import com.aluminate.aluminate_organization_backend.repository.StagedTransactionRepository;
-import com.aluminate.aluminate_organization_backend.service.payment.PaymentNotifyService;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.security.PrivateKey;
@@ -74,7 +66,7 @@ public class TransactionHandler {
         return incomingTransactionRepository.findByStagedFalse();
     }
     //run the staging process & ticketing process
-    @Transactional
+
     public GlobalTransactionTicket stageAndTicketTransactions(){
         BigDecimal amount = BigDecimal.ZERO;
 
@@ -106,9 +98,14 @@ public class TransactionHandler {
                 return null;
             }
             log.info("Retrieved staged transactions for ticketing: " + stagedTransactions.size());
+            //get the admin from the organization of the first staged transaction
+            Admin admin = stagedTransactions.get(0).getOrganization().getAdmin();
+            String adminEmail = admin.getEmail();
 
+            //get first 3 characters of admin email
+            String emailPrefix = adminEmail.substring(0, Math.min(adminEmail.length(), 3)).toUpperCase();
             //create a unique key for the ticket
-            String ticketKey = "A-ORG-"+ stagedTransactions.get(0).getOrganization().getId() + System.currentTimeMillis();
+            String ticketKey = stagedTransactions.get(0).getOrganization().getId() + "-" + emailPrefix + "-" + System.currentTimeMillis();
 
             //sum amount for each unticketed staged transaction & assign ticket key
             for(StagedTransaction stagedTransaction : stagedTransactions){
@@ -206,24 +203,21 @@ public class TransactionHandler {
     public void handleGlobalServer(GlobalTransactionTicket globalTransactionTicket){
         try{
             //encrypt object -> amount & key
-            String keyAndAmountEncrypted = RSAEncryptionUtil.encrypt(
-                    objectMapper.writeValueAsString(new KeyAndAmount(globalTransactionTicket.getKey(), globalTransactionTicket.getAmount())),
+            String encryptedKey = RSAEncryptionUtil.encrypt(
+                    objectMapper.writeValueAsString(new EncryptedTicketKey(globalTransactionTicket.getKey())),
                     globalPublicKey
             );
             //create GlobalMainTransactionTicket object
             GlobalMainTransactionTicket globalMainTransactionTicket = new GlobalMainTransactionTicket();
-            globalMainTransactionTicket.setKeyAndAmountEncrypted(keyAndAmountEncrypted);
+            globalMainTransactionTicket.setEncryptedTicketKey(encryptedKey);
+            globalMainTransactionTicket.setAmount(globalTransactionTicket.getAmount());
             globalMainTransactionTicket.setOrganizationId(globalTransactionTicket.getOrganization().getId());
 
-            //encrypt the whole object
-            String globalMainTransactionTicketEncrypted = RSAEncryptionUtil.encrypt(
-                    objectMapper.writeValueAsString(globalMainTransactionTicket),
-                    globalPublicKey
-            );
+
 
             //call the other server using feign client
-            ResponseEntity<Boolean> response = globalBackendAuthClient.syncOrgTransactionTickets(globalMainTransactionTicketEncrypted);
-            if(response.getBody() != null && response.getBody()){
+            ResponseEntity<ResponseWrapper<Boolean>> response = globalBackendAuthClient.syncOrgTransactionTickets(globalMainTransactionTicket);
+            if(response.getStatusCode().is2xxSuccessful() && response.getBody() != null && Boolean.TRUE.equals(response.getBody().getData())){
                 //update the ticket as sent
                 globalTransactionTicket.setSend(true);
                 globalTransactionTicketRepository.save(globalTransactionTicket);

@@ -20,7 +20,7 @@ public class GlobalTransactionTicket {
     private BigDecimal amount;
 
     //organization
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "organization_id", foreignKey = @ForeignKey(name = "fk_global_transaction_ticket_organization",
             foreignKeyDefinition = "FOREIGN KEY (organization_id) REFERENCES organization(id) ON UPDATE CASCADE ON DELETE CASCADE"))
     private Organization organization;
