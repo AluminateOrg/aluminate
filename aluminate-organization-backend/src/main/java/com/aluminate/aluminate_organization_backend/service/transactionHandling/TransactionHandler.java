@@ -8,6 +8,7 @@ import com.aluminate.aluminate_organization_backend.dto.transactionSync.Encrypte
 import com.aluminate.aluminate_organization_backend.model.*;
 import com.aluminate.aluminate_organization_backend.repository.GlobalTransactionTicketRepository;
 import com.aluminate.aluminate_organization_backend.repository.IncomingTransactionRepository;
+import com.aluminate.aluminate_organization_backend.repository.OrganizationRepository;
 import com.aluminate.aluminate_organization_backend.repository.StagedTransactionRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
@@ -22,12 +23,14 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class TransactionHandler {
     private final IncomingTransactionRepository incomingTransactionRepository;
     private final StagedTransactionRepository stagedTransactionRepository;
     private final GlobalTransactionTicketRepository globalTransactionTicketRepository;
+    private final OrganizationRepository organizationRepository;
 
     @Value("${encryption.organization.private-key}")
     private String orgPrivateKeyENV;
@@ -52,13 +55,15 @@ public class TransactionHandler {
             IncomingTransactionRepository incomingTransactionRepository,
             StagedTransactionRepository stagedTransactionRepository,
             GlobalTransactionTicketRepository globalTransactionTicketRepository,
-            GlobalBackendAuthClient globalBackendAuthClient
+            GlobalBackendAuthClient globalBackendAuthClient,
+            OrganizationRepository organizationRepository
 
     ) {
         this.incomingTransactionRepository = incomingTransactionRepository;
         this.stagedTransactionRepository = stagedTransactionRepository;
         this.globalTransactionTicketRepository = globalTransactionTicketRepository;
         this.globalBackendAuthClient = globalBackendAuthClient;
+        this.organizationRepository = organizationRepository;
     }
 
 
@@ -232,6 +237,46 @@ public class TransactionHandler {
         }
 
     }
+
+    //validate ticket ack from global server
+    public boolean validateTransactionTicketKey(String ticketKey){
+
+        try{
+            log.info("Validating Ticket Key: {}", ticketKey);
+            //get ticket chars from beginning to the first '-'
+            String orgId = ticketKey.split("-")[0];
+            Optional<Organization> optionalOrganization = organizationRepository.findById(Long.valueOf(orgId));
+
+            if(optionalOrganization.isEmpty()){
+                log.error("Organization not found for ID: {}", orgId);
+                return false;
+            }
+            Organization organization = optionalOrganization.get();
+
+            //get admin
+            Admin admin = organization.getAdmin();
+
+            //get first 3 chars of admin email
+            String emailPrefix = admin.getEmail().substring(0, 3).toUpperCase();
+
+            //from ticket key get chars between first '-' and second '-'
+            String ticketEmailPrefix = ticketKey.split("-")[1];
+            if(!emailPrefix.equals(ticketEmailPrefix)){
+                log.error("Ticket key email prefix does not match for ticket key: {}", ticketKey);
+                return false;
+            }
+            log.info("Ticket key validated successfully for ticket key: {}", ticketKey);
+            return true;
+
+
+        } catch (Exception e) {
+            log.error("Error while validating PayHere payment notification", e);
+
+            throw new RuntimeException(e);
+        }
+
+    }
+
 
 
 }

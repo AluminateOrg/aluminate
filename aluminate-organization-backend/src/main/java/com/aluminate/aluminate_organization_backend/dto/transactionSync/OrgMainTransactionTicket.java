@@ -1,19 +1,18 @@
 package com.aluminate.aluminate_organization_backend.dto.transactionSync;
 
-
-import lombok.*;
+import com.aluminate.aluminate_organization_backend.model.TransactionStatus;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Data
-@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class GlobalMainTransactionTicket {
-    //encrypted ticket key & amount
+public class OrgMainTransactionTicket {
     private String encryptedTicketKey;
     private BigDecimal amount;
-    //rest
     private Long organizationId;
+    private TransactionStatus transactionStatus;
 }
