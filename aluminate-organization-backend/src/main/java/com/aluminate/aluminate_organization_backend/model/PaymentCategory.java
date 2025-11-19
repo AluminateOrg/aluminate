@@ -5,5 +5,5 @@ public enum PaymentCategory {
     DONATION,
     MENTORSHIP,
     EVENT,
-    MATERIAL
+    MATERIAL//send to backend relavant org serverpublic Boo sendTicket//function to
 }

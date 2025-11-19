@@ -5,6 +5,9 @@ public enum TransactionStatus {
     PENDING,
     SUCCESS,
     FAILED,
-    CANCELLED
+    CANCELLED,
+    PAID,
+    REJECTED,
+    COMPLETED
 }
 

@@ -1,7 +1,9 @@
 package com.aluminate.aluminate_organization_backend.config.GlobalAuth;
 
+import com.aluminate.aluminate_organization_backend.config.ResponseWrapper;
 import com.aluminate.aluminate_organization_backend.dto.login.GlobalAuthRequest;
 import com.aluminate.aluminate_organization_backend.dto.login.GlobalAuthResponse;
+import com.aluminate.aluminate_organization_backend.dto.transactionSync.GlobalMainTransactionTicket;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,7 +21,7 @@ public interface GlobalBackendAuthClient {
             @RequestBody String encryptedRequest);
 
     @PostMapping("/public/payment/syncOrgTransactionTickets")
-    ResponseEntity<Boolean> syncOrgTransactionTickets(
-            @RequestBody String encryptedTicket
+    ResponseEntity<ResponseWrapper<Boolean>> syncOrgTransactionTickets(
+            @RequestBody GlobalMainTransactionTicket encryptedTicket
     );
 }

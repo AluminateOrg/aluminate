@@ -9,7 +9,6 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-public class KeyAndAmount {
+public class EncryptedTicketKey {
     private String key;
-    private BigDecimal amount;
 }

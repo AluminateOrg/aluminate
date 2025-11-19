@@ -15,6 +15,7 @@ public interface StagedTransactionRepository extends JpaRepository<StagedTransac
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
     );
+    List<StagedTransaction> findByGlobalTransactionTicketId(Long globalTransactionTicketId);
 
 
 }

@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -23,7 +24,8 @@ public class TransactionScheduler {
         this.transactionHandler = transactionHandler;
     }
 
-    @Scheduled(cron = "0 */5 * * * *", zone = "Asia/Colombo")
+    @Scheduled(cron = "0 */2 * * * *", zone = "Asia/Colombo")
+    @Transactional
     public void scheduleTransactionSyncing() {
         //stage transactions and create tickets
         GlobalTransactionTicket globalTransactionTicket = transactionHandler.stageAndTicketTransactions();
