@@ -99,9 +99,9 @@ public class TransactionHandler {
 
             //retrieve staged transactions from yesterday 7 am to today 7 am where unticketed and key is null
             LocalDateTime yesterdayAt7Am = LocalDateTime.now().minusDays(1).withHour(7).withMinute(0).withSecond(0).withNano(0);
-            LocalDateTime todayAt11Pm = LocalDateTime.now().withHour(23).withMinute(0).withSecond(0).withNano(0);
+            LocalDateTime todayAt7Am = LocalDateTime.now().withHour(23).withMinute(0).withSecond(0).withNano(0);
 
-            List<StagedTransaction> stagedTransactions = stagedTransactionRepository.findStagedTransactionsBetweenDatesUnticketed(yesterdayAt7Am, todayAt11Pm);
+            List<StagedTransaction> stagedTransactions = stagedTransactionRepository.findStagedTransactionsBetweenDatesUnticketed(yesterdayAt7Am, todayAt7Am);
 
             if(stagedTransactions.isEmpty()){
                 log.info("No staged transactions found for ticketing process. Exiting.");

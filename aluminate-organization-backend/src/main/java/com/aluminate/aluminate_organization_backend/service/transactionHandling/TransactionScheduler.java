@@ -24,7 +24,7 @@ public class TransactionScheduler {
         this.transactionHandler = transactionHandler;
     }
 
-    @Scheduled(cron = "0 */2 * * * *", zone = "Asia/Colombo")
+    @Scheduled(cron = "0 0 7 * * *", zone = "Asia/Colombo")
     @Transactional
     public void scheduleTransactionSyncing() {
         //stage transactions and create tickets
