@@ -37,6 +37,10 @@ public class GlobalTransactionTicket {
     @Builder.Default
     private Boolean send = false;
 
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private TransactionStatus status = TransactionStatus.PENDING;
+
     @Column(unique = true, nullable = false)
     private String key;
 

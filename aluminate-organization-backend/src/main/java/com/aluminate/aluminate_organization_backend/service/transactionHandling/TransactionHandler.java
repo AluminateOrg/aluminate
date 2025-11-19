@@ -5,11 +5,9 @@ import com.aluminate.aluminate_organization_backend.config.ResponseWrapper;
 import com.aluminate.aluminate_organization_backend.config.util.RSAEncryptionUtil;
 import com.aluminate.aluminate_organization_backend.dto.transactionSync.GlobalMainTransactionTicket;
 import com.aluminate.aluminate_organization_backend.dto.transactionSync.EncryptedTicketKey;
+import com.aluminate.aluminate_organization_backend.dto.transactionSync.OrgTicketAck;
 import com.aluminate.aluminate_organization_backend.model.*;
-import com.aluminate.aluminate_organization_backend.repository.GlobalTransactionTicketRepository;
-import com.aluminate.aluminate_organization_backend.repository.IncomingTransactionRepository;
-import com.aluminate.aluminate_organization_backend.repository.OrganizationRepository;
-import com.aluminate.aluminate_organization_backend.repository.StagedTransactionRepository;
+import com.aluminate.aluminate_organization_backend.repository.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -23,6 +21,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -31,6 +30,8 @@ public class TransactionHandler {
     private final StagedTransactionRepository stagedTransactionRepository;
     private final GlobalTransactionTicketRepository globalTransactionTicketRepository;
     private final OrganizationRepository organizationRepository;
+    private final AckTransactionRepository ackTransactionRepository;
+    private final TransactionRepository transactionRepository;
 
     @Value("${encryption.organization.private-key}")
     private String orgPrivateKeyENV;
@@ -56,7 +57,9 @@ public class TransactionHandler {
             StagedTransactionRepository stagedTransactionRepository,
             GlobalTransactionTicketRepository globalTransactionTicketRepository,
             GlobalBackendAuthClient globalBackendAuthClient,
-            OrganizationRepository organizationRepository
+            OrganizationRepository organizationRepository,
+            AckTransactionRepository ackTransactionRepository,
+            TransactionRepository transactionRepository
 
     ) {
         this.incomingTransactionRepository = incomingTransactionRepository;
@@ -64,6 +67,8 @@ public class TransactionHandler {
         this.globalTransactionTicketRepository = globalTransactionTicketRepository;
         this.globalBackendAuthClient = globalBackendAuthClient;
         this.organizationRepository = organizationRepository;
+        this.ackTransactionRepository = ackTransactionRepository;
+        this.transactionRepository = transactionRepository;
     }
 
 
@@ -265,6 +270,13 @@ public class TransactionHandler {
                 log.error("Ticket key email prefix does not match for ticket key: {}", ticketKey);
                 return false;
             }
+            //check if ticket exists in globalTransactionTicketRepository
+            Optional<GlobalTransactionTicket> optionalTicket = globalTransactionTicketRepository.findByKey(ticketKey);
+            if(optionalTicket.isEmpty()){
+                log.error("Ticket key not found in GlobalTransactionTicketRepository: {}", ticketKey);
+                return false;
+            }
+
             log.info("Ticket key validated successfully for ticket key: {}", ticketKey);
             return true;
 
@@ -272,6 +284,80 @@ public class TransactionHandler {
         } catch (Exception e) {
             log.error("Error while validating PayHere payment notification", e);
 
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    //process ticket from global server
+    public void processTransactionTicketAck(OrgTicketAck globalTicketAck){
+        try{
+            log.info("Processing Transaction Ticket Acknowledgement");
+            BigDecimal totalAmount = BigDecimal.ZERO;
+            //get ticket from local repository
+            Optional<GlobalTransactionTicket> localTicket = globalTransactionTicketRepository.findByKey(globalTicketAck.getKey());
+            if(localTicket.isEmpty()){
+                log.error("Ticket key not found in GlobalTransactionTicketRepository: {}", globalTicketAck.getKey());
+                return ;
+            } else if (!Objects.equals(localTicket.get().getKey(), globalTicketAck.getKey())) {
+                log.error("Ticket keys don't match: {}", globalTicketAck.getKey());
+                return ;
+            }
+            //get all staged transaction which reference the localTicket id
+            List<StagedTransaction> stagedTransactions = stagedTransactionRepository.findByGlobalTransactionTicketId(localTicket.get().getId());
+            if(stagedTransactions.isEmpty()){
+                log.error("No staged transactions retrieved for ticket key: {}", globalTicketAck.getKey());
+                return ;
+            }
+
+            //get the incoming transactions from each staged transaction
+            for(StagedTransaction stagedTransaction : stagedTransactions){
+                IncomingTransaction incomingTransaction = stagedTransaction.getIncomingTransaction();
+                //mark incoming transaction as acked
+                incomingTransaction.setAck(true);
+                incomingTransaction.setTransactionStatus(TransactionStatus.COMPLETED);
+                incomingTransactionRepository.save(incomingTransaction);
+
+                //get transaction records incoming transactions reference & mark them as completed
+                Transaction transaction = incomingTransaction.getTransaction();
+                transaction.setTransactionStatus(TransactionStatus.COMPLETED);
+                //save transaction
+                transactionRepository.save(transaction);
+
+                //sum total amount
+                totalAmount = totalAmount.add(stagedTransaction.getAmount());
+            }
+
+            //create a ackTransaction per staged transaction
+            for(StagedTransaction stagedTransaction : stagedTransactions) {
+                AckTransaction ackTransaction = new AckTransaction();
+                ackTransaction.setAmount(stagedTransaction.getAmount());
+                ackTransaction.setCurrency(stagedTransaction.getCurrency());
+                ackTransaction.setCategory(stagedTransaction.getCategory());
+                ackTransaction.setIncomingTransaction(stagedTransaction.getIncomingTransaction());
+
+                //save ackTransaction
+                ackTransactionRepository.save(ackTransaction);
+
+                //delete staged transaction
+                stagedTransactionRepository.delete(stagedTransaction);
+
+            }
+
+            //verify total amount
+            if(totalAmount.equals(globalTicketAck.getAmount()) && totalAmount.equals(localTicket.get().getAmount())){
+                //mark local ticket as acked
+                GlobalTransactionTicket ticketToUpdate = localTicket.get();
+                ticketToUpdate.setAck(true);
+                ticketToUpdate.setStatus(globalTicketAck.getStatus());
+                globalTransactionTicketRepository.save(ticketToUpdate);
+                log.info("Transaction Ticket Acknowledged successfully for key: {}", globalTicketAck.getKey());
+            } else {
+                log.error("Amount mismatch while processing Transaction Ticket Acknowledgement for key: {}", globalTicketAck.getKey());
+                return ;
+            }
+        } catch (Exception e) {
+            log.error("Error while processing Transaction Ticket Acknowledgement", e);
             throw new RuntimeException(e);
         }
 

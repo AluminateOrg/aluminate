@@ -58,9 +58,6 @@ public class GlobalTransactionTicketHandler {
             );
             logger.info("Decrypted Ticket Key String: {}", decryptedTicketKey);
 
-
-
-
             //build OrgTicketAck
             OrgTicketAck orgTicketAck = OrgTicketAck.builder()
                     .key(decryptedTicketKey)
@@ -70,9 +67,15 @@ public class GlobalTransactionTicketHandler {
                     .build();
 
             //validate ticket
-            transactionHandler.validateTransactionTicketKey(orgTicketAck.getKey());
+            boolean isTicketValid = transactionHandler.validateTransactionTicketKey(orgTicketAck.getKey());
 
-            //process ticket - implement later
+            if(!isTicketValid){
+                logger.error("Invalid transaction ticket key: {}", orgTicketAck.getKey());
+                ResponseWrapper<Boolean> body = new ResponseWrapper<>(false, "Invalid transaction ticket key", false);
+                return ResponseEntity.badRequest().body(body);
+            }
+            //process ticket
+            transactionHandler.processTransactionTicketAck(orgTicketAck);
 
             //response
             ResponseWrapper<Boolean> body = new ResponseWrapper<>(true, "Transaction ticket handled successfully", true);
