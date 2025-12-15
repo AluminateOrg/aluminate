@@ -66,6 +66,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
                         // User payment endpoints - require MEMBER role - FIXED
                         .requestMatchers(apiPrefix + "/user/**").hasAnyRole("MEMBER", "member")
 
+                        //The following lines were added to restrict search access, but they are currently
+                        // not taking effect (returning 200 OK for all users)
+                        .requestMatchers(apiPrefix + "/admin/member/search").hasAnyAuthority("ADMIN", "SUPER_ADMIN")
+                        .requestMatchers(apiPrefix + "/member/member/search").hasAnyAuthority("MEMBER", "ADMIN")
+
                         // Deny all other requests
                         .anyRequest().denyAll()
                 )
