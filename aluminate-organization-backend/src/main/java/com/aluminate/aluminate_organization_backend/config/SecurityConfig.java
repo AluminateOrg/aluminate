@@ -66,6 +66,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
                         // User payment endpoints - require MEMBER role - FIXED
                         .requestMatchers(apiPrefix + "/user/**").hasAnyRole("MEMBER", "member")
 
+
+
                         // Deny all other requests
                         .anyRequest().denyAll()
                 )
