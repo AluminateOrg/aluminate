@@ -87,7 +87,7 @@ class MemberServiceImplSelfProfileTest {
 
         assertThat(dto.getEmail()).isEqualTo("hashir.zuhair@gmail.com");
         assertThat(dto.getName()).isEqualTo("Hashir");
-        assertThat(dto.is_active()).isTrue();
+        assertThat(dto.isActive()).isTrue();
         assertThat(dto.getPhotoUrl()).isEqualTo("https://cdn.example.com/old.png");
     }
 

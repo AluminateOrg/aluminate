@@ -39,7 +39,7 @@ public class MemberDonationService {
                 .nic(member.getNic())
                 .phone(member.getPhone())
                 .email(member.getEmail())
-                .is_active(member.isActive())
+                .isActive(member.isActive())
                 .regNo(member.getRegNo())
                 .address(member.getAddress())
                 .photoUrl(member.getPhotoUrl())

@@ -1,5 +1,6 @@
 package com.aluminate.aluminate_organization_backend.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
 
@@ -10,7 +11,8 @@ import java.util.List;
 public class MemberResponseDTO {
     private String name;
     private String nic;
-    private boolean is_active;
+    @JsonProperty("is_active")
+    private boolean isActive;
     private String phone;
     private String email;
     private String regNo;
