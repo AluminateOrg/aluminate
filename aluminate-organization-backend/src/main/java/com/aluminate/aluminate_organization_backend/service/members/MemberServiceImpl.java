@@ -327,7 +327,7 @@ public class MemberServiceImpl implements IMemberService {
         return MemberResponseDTO.builder()
                 .name(m.getName())
                 .nic(m.getNic())
-                .is_active(m.isActive())
+                .isActive(m.isActive())
                 .phone(m.getPhone())
                 .email(m.getEmail())
                 .regNo(m.getRegNo())
