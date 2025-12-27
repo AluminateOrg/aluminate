@@ -4,10 +4,9 @@ import com.aluminate.aluminate_organization_backend.dto.payment.PaymentNotifyReq
 import com.aluminate.aluminate_organization_backend.service.payment.PaymentNotifyService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
 @RestController
 @RequestMapping("${api.prefix}/public/payment/notify")
 public class PaymentNotificationHandler {
@@ -32,5 +31,12 @@ public class PaymentNotificationHandler {
 
         }
     }
-
+//    Manually verifies the payment and triggers the creation of the Donation record.
+//    This endpoint is called by the frontend immediately after a successful PayHere payment
+    @GetMapping(value = "/verify/{orderId}")
+    public ResponseEntity<String> verifyPayment(@PathVariable String orderId) {
+        boolean success = paymentNotifyService.verifyOrder(orderId);
+        if (success) return ResponseEntity.ok("Saved");
+        return ResponseEntity.badRequest().body("Failed");
+    }
 }
