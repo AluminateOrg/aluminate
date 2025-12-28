@@ -269,4 +269,60 @@ package com.aluminate.aluminate_organization_backend.service.payment;
             }
             return sb.toString();
         }
+//    Verifies a payment order and manually creates the corresponding Donation record.
+    public boolean verifyOrder(String orderId) {
+        try {
+            Long id = Long.valueOf(orderId);
+
+            Optional<Transaction> optionalTransaction = transactionRepository.findById(id);
+
+            if (optionalTransaction.isPresent()) {
+                Transaction transaction = optionalTransaction.get();
+
+                // Mock Success in Transaction Table
+                transaction.setTransactionStatus(TransactionStatus.SUCCESS);
+                transaction.setStatusCode("2");
+                transactionRepository.save(transaction);
+
+                //  CHECK IF DONATION ALREADY EXISTS ---
+                Optional<Donation> existingDonation = donationRepository.findByTransaction(transaction);
+
+                if (existingDonation.isPresent()) {
+                    log.info("Donation already exists for Order " + orderId + ". Skipping save.");
+                    return true; // Return Success immediately
+                }
+
+                //If NOT exists, Create New Donation
+                Donation donation = new Donation();
+                donation.setAmount(transaction.getAmount());
+                donation.setDate(LocalDate.now());
+                donation.setCreatedAt(LocalDateTime.now());
+                donation.setStatus(Donation.DonationStatus.COMPLETED);
+                donation.setPaymentStatus(Donation.PaymentStatus.COMPLETED);
+                donation.setPaymentMethod("PAYHERE");
+                donation.setAnonymous(false);
+
+                donation.setMember(transaction.getMember());
+                donation.setTransaction(transaction);
+
+                // Default Campaign ID = 1
+                Long campaignId = 1L;
+                Campaign campaign = campaignRepository.findById(campaignId).orElse(null);
+
+                if (campaign != null) {
+                    donation.setCampaign(campaign);
+                    donationRepository.save(donation);
+                    log.info("Mock Donation created for Order: " + orderId);
+                    return true;
+                } else {
+                    log.error("Campaign ID 1 not found.");
+                    return false;
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            log.error("Error in verifyOrder", e);
+            return false;
+        }
     }
+}
