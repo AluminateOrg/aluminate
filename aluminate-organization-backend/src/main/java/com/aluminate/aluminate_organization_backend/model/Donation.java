@@ -33,7 +33,11 @@ public class Donation {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-    @OneToOne(mappedBy = "donation", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToOne
+    @JoinColumn(name = "transaction_id", nullable = false, foreignKey = @ForeignKey(
+            name = "fk_donation_transaction",
+            foreignKeyDefinition = "FOREIGN KEY (transaction_id) REFERENCES transaction(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    ))
     private Transaction transaction;
 
 

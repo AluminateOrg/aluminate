@@ -16,6 +16,9 @@ package com.aluminate.aluminate_organization_backend.service.payment;
     import java.util.Objects;
     import java.util.Optional;
 
+    import static com.aluminate.aluminate_organization_backend.model.PaymentCategory.DONATION;
+    import static org.springframework.messaging.simp.stomp.StompHeaders.SUBSCRIPTION;
+
 
 /**
      * Service for handling payment notifications from PayHere.
@@ -33,6 +36,7 @@ package com.aluminate.aluminate_organization_backend.service.payment;
         private final MemberRepository memberRepository;
         private final CampaignRepository campaignRepository;
         private final DonationRepository donationRepository;
+        private final IncomingTransactionRepository incomingTransactionRepository;
 
         /**
          * Constructs a PaymentNotifyService with required repositories.
@@ -47,13 +51,15 @@ package com.aluminate.aluminate_organization_backend.service.payment;
                                     OrganizationRepository organizationRepository,
                                     MemberRepository memberRepository,
                                     CampaignRepository campaignRepository,
-                                    DonationRepository donationRepository
+                                    DonationRepository donationRepository,
+                                    IncomingTransactionRepository incomingTransactionRepository
         ) {
             this.transactionRepository = transactionRepository;
             this.organizationRepository = organizationRepository;
             this.memberRepository = memberRepository;
             this.campaignRepository = campaignRepository;
             this.donationRepository = donationRepository;
+            this.incomingTransactionRepository = incomingTransactionRepository;
         }
 
         /**
@@ -86,11 +92,31 @@ package com.aluminate.aluminate_organization_backend.service.payment;
 
                         transactionRepository.save(transaction);
                         log.info("Transaction saved! Order ID: {}", request.getOrder_id());
-                        // Publish event to Kafka or any other message broker if needed
-                        //logic to handle rest of the payment success
+                        // Handle domain-specific logic based on transaction category
+                        handleDomainSpecificLogic(transaction, request);
 
-                        //get campaign & member
-                        //get member
+                        //add notification by kafka and send email
+
+                        // Additional processing can be done here
+
+
+
+                    } else {
+                        log.warn("Transaction not found for ID: {}", request.getOrder_id());
+                    }
+                } else {
+                    log.warn("Payment verification FAILED for order {}", request.getOrder_id());
+                }
+            } catch (Exception e) {
+                log.error("Error while verifying PayHere payment notification", e);
+            }
+        }
+
+        private void handleDomainSpecificLogic(Transaction transaction, PaymentNotifyRequest request) {
+            // Implement any domain-specific logic here if needed
+            switch (transaction.getCategory()) {
+                case DONATION:
+                    try {
                         Optional<Member> optionalMember = memberRepository.findByEmail(request.getCustom_2());
                         if (optionalMember.isEmpty()) {
                             throw new IllegalArgumentException("Member not found for email: " + request.getCustom_2());
@@ -127,16 +153,35 @@ package com.aluminate.aluminate_organization_backend.service.payment;
                         Donation savedDonation = donationRepository.save(donation);
                         log.info("Donation saved with ID: {}", savedDonation.getId());
 
+                        //save incoming transaction
+                        IncomingTransaction incomingTransaction = IncomingTransaction.builder()
+                                .amount(new BigDecimal(request.getPayhere_amount()))
+                                .currency(request.getPayhere_currency())
+                                .transactionStatus(TransactionStatus.SUCCESS)
+                                .category(DONATION)
+                                .organization(transaction.getOrganization())
+                                .transaction(transaction)
+                                .staged(false)
+                                .ack(false)
+                                .build();
+                        incomingTransactionRepository.save(incomingTransaction);
 
-                    } else {
-                        log.warn("Transaction not found for ID: {}", request.getOrder_id());
+
+
                     }
-                } else {
-                    log.warn("Payment verification FAILED for order {}", request.getOrder_id());
-                }
-            } catch (Exception e) {
-                log.error("Error while verifying PayHere payment notification", e);
+                    catch (Exception e) {
+                        log.error("Error while processing donation for transaction ID: {}", transaction.getId(), e);
+                    }
+
+                    break;
+                case MENTORSHIP:
+                    // Handle Mentorship-specific logic
+                    break;
+                default:
+                    log.warn("Unknown transaction category: {}", transaction.getCategory());
+
             }
+
         }
 
         /**
@@ -224,4 +269,60 @@ package com.aluminate.aluminate_organization_backend.service.payment;
             }
             return sb.toString();
         }
+//    Verifies a payment order and manually creates the corresponding Donation record.
+    public boolean verifyOrder(String orderId) {
+        try {
+            Long id = Long.valueOf(orderId);
+
+            Optional<Transaction> optionalTransaction = transactionRepository.findById(id);
+
+            if (optionalTransaction.isPresent()) {
+                Transaction transaction = optionalTransaction.get();
+
+                // Mock Success in Transaction Table
+                transaction.setTransactionStatus(TransactionStatus.SUCCESS);
+                transaction.setStatusCode("2");
+                transactionRepository.save(transaction);
+
+                //  CHECK IF DONATION ALREADY EXISTS ---
+                Optional<Donation> existingDonation = donationRepository.findByTransaction(transaction);
+
+                if (existingDonation.isPresent()) {
+                    log.info("Donation already exists for Order " + orderId + ". Skipping save.");
+                    return true; // Return Success immediately
+                }
+
+                //If NOT exists, Create New Donation
+                Donation donation = new Donation();
+                donation.setAmount(transaction.getAmount());
+                donation.setDate(LocalDate.now());
+                donation.setCreatedAt(LocalDateTime.now());
+                donation.setStatus(Donation.DonationStatus.COMPLETED);
+                donation.setPaymentStatus(Donation.PaymentStatus.COMPLETED);
+                donation.setPaymentMethod("PAYHERE");
+                donation.setAnonymous(false);
+
+                donation.setMember(transaction.getMember());
+                donation.setTransaction(transaction);
+
+                // Default Campaign ID = 1
+                Long campaignId = 1L;
+                Campaign campaign = campaignRepository.findById(campaignId).orElse(null);
+
+                if (campaign != null) {
+                    donation.setCampaign(campaign);
+                    donationRepository.save(donation);
+                    log.info("Mock Donation created for Order: " + orderId);
+                    return true;
+                } else {
+                    log.error("Campaign ID 1 not found.");
+                    return false;
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            log.error("Error in verifyOrder", e);
+            return false;
+        }
     }
+}

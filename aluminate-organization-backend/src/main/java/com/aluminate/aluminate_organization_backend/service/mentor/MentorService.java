@@ -8,6 +8,8 @@ import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
 import com.aluminate.aluminate_organization_backend.repository.MentorProgramRepository;
 import com.aluminate.aluminate_organization_backend.repository.MentorRepository;
 import com.aluminate.aluminate_organization_backend.service.EmailService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +29,7 @@ public class MentorService {
     private final MemberRepository memberRepository;
     private final MentorProgramRepository mentorProgramRepository;
     private final EmailService emailService;
+    private final Logger logger = LoggerFactory.getLogger(MentorService.class);
 
     public MentorService(MentorRepository mentorRepository, MemberRepository memberRepository, MentorProgramRepository mentorProgramRepository, EmailService emailService) {
         this.mentorRepository = mentorRepository;
@@ -210,12 +213,15 @@ public class MentorService {
                         .orElseThrow(() -> new RuntimeException("Member not found")))
                 .collect(Collectors.toSet());
 
+        Member createdBy = memberRepository.findById(requestDTO.getCreatedBy())
+                .orElseThrow(() -> new RuntimeException("Member not found"));
 
         //save to the mentor program table
         MentorProgram mentorProgram = MentorProgram.builder()
                 .mentor(mentor)
                 .participants(participants)
                 .createdAt(LocalDateTime.now())
+                .createdBy(createdBy)
                 .status("PENDING")
                 .build();
 
@@ -273,19 +279,12 @@ public class MentorService {
     //get all sessions by mentor
     @Transactional(readOnly = true)
     public List<MentorSessionDTO> getAllSessionsByMentor(Long mentorId) {
-        Mentor mentor = mentorRepository.findById(mentorId)
+
+        Mentor mentor = mentorRepository.findByMemberId(mentorId)
                 .orElseThrow(() -> new RuntimeException("Mentor not found"));
 
-//        return mentor.getPrograms().stream()
-//                .map(program -> MentorSessionDTO.builder()
-//                        .id(program.getId())
-//                        .programUrl(program.getProgramUrl())
-//                        .date(program.getDate())
-//                        .time(program.getTime())
-//                        .status(program.getStatus())
-//                        .build())
-//                .collect(Collectors.toList());
-        return mentorProgramRepository.findAllByMentorId(mentorId).stream()
+        List<MentorSessionDTO> sessions = mentorProgramRepository.findAll().stream()
+                .filter(program -> program.getMentor().getId().equals(mentor.getId()))
                 .map(program -> MentorSessionDTO.builder()
                         .id(program.getId())
                         .programUrl(program.getProgramUrl())
@@ -303,10 +302,16 @@ public class MentorService {
                         .status(program.getStatus())
                         .date(program.getDate())
                         .time(program.getTime())
-                        .sessionDuration("1 hour")
+                        .isPaid(program.isPaid())
+                        .createdBy(program.getCreatedBy().getId())
+                        .hourly_rate(mentor.getHourlyRate())
+                        .sessionDuration("1 hour") // Placeholder, can be calculated based on program data
                         .createdAt(program.getCreatedAt())
                         .build())
                 .collect(Collectors.toList());
+
+        return sessions;
+
     }
 
     @Transactional(readOnly = true)
@@ -328,7 +333,10 @@ public class MentorService {
                         .menteeName(member.getName())
                         .status(program.getStatus())
                         .date(program.getDate())
+                        .hourly_rate(program.getMentor().getHourlyRate())
                         .time(program.getTime())
+                        .createdBy(program.getCreatedBy().getId())
+                        .isPaid(program.isPaid())
                         .sessionDuration("1 hour") // Placeholder, can be calculated based on program data
                         .build())
                 .collect(Collectors.toList());
@@ -365,5 +373,54 @@ public class MentorService {
         mentorProgram.setStatus("SCHEDULED");
         mentorProgramRepository.save(mentorProgram);
         return true;
+    }
+
+    public boolean updateProgramIsPaid(Long id) {
+        MentorProgram mentorProgram = mentorProgramRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Mentor program not found"));
+        logger.info("Updating isPaid for MentorProgram id: " + id);
+        mentorProgram.setPaid(true);
+        mentorProgramRepository.save(mentorProgram);
+        return true;
+    }
+
+    public List<MentorApplicationDTO> getAllApprovedMentorsExceptSelf(Long id) {
+        List<Mentor> approvedMentors = mentorRepository.findAll().stream()
+                .filter(mentor -> mentor.isApproved() && !mentor.getMember().getId().equals(id))
+                .toList();
+
+        return getMentorApplicationDTOS(approvedMentors);
+    }
+
+
+    public List<MentorSessionDTO> getAllSessionsExceptSelf(Long userId) {
+        Mentor mentor = mentorRepository.findByMemberId(userId)
+                .orElseThrow(() -> new RuntimeException("Mentor not found"));
+        Member member = memberRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Member not found"));
+        List<MentorSessionDTO> allSessions = mentorProgramRepository.findAll().stream()
+                .filter(mentorProgram -> mentorProgram.getCreatedBy().equals(member))
+                .map(program -> MentorSessionDTO.builder()
+                        .id(program.getId())
+                        .programUrl(program.getProgramUrl())
+                        .mentorName(program.getMentor().getMember().getName())
+                        .menteeName(
+                                program.getParticipants().stream()
+                                        .map(Member::getName)
+                                        .collect(Collectors.joining(", "))
+                        )
+                        .menteeEmail(
+                                program.getParticipants().stream()
+                                        .map(Member::getEmail)
+                                        .collect(Collectors.joining(", "))
+                        )
+                        .status(program.getStatus())
+                        .date(program.getDate())
+                        .time(program.getTime())
+                        .sessionDuration("1 hour")
+                        .createdAt(program.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
+        return allSessions;
     }
 }

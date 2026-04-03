@@ -8,10 +8,16 @@ import com.aluminate.aluminate_organization_backend.model.Member;
 import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
 import com.aluminate.aluminate_organization_backend.service.MemberService;
 import com.aluminate.aluminate_organization_backend.service.members.IMemberService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.springframework.http.HttpStatus.*;
 
@@ -69,6 +75,34 @@ public class MemberController {
             return ResponseEntity.status(INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse("Failed to retrieve members.", null));
         }
+    }
+
+    // ADMIN  SEARCH MEMBERS WITH PAGINATION
+    @GetMapping({"admin/member/search", "member/member/search"})
+    public ResponseEntity<ApiResponse> searchMembers(
+            @RequestParam(value = "offset", defaultValue = "0") int offset,
+            @RequestParam(value = "limit", defaultValue = "10") int limit,
+            @RequestParam(value = "search", required = false) String search,
+            @RequestParam(value = "status", required = false) String status
+
+    ){
+        try {
+            int pageNumber = offset / limit;
+
+            Pageable pageable = PageRequest.of(pageNumber, limit, Sort.by("id").descending());
+            Page<MemberResponseDTO> pageResult = memberServiceP.searchMembers(search, status, pageable);
+
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("data", pageResult.getContent());
+            responseData.put("total", pageResult.getTotalElements());
+
+            return ResponseEntity.ok(new ApiResponse("Search results retrieved!", responseData));
+
+        }catch (Exception e){
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(new ApiResponse("Error searching members", null));
+        }
+
     }
 
     // BOTH MEMBER AND ADMIN

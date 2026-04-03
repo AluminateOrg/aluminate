@@ -4,10 +4,7 @@ import com.aluminate.aluminate_organization_backend.dto.MemberRequestDTO;
 import com.aluminate.aluminate_organization_backend.dto.MemberResponseDTO;
 import com.aluminate.aluminate_organization_backend.dto.group.GroupMembershipStatusDTO;
 import com.aluminate.aluminate_organization_backend.exception.ResourceNotFoundException;
-import com.aluminate.aluminate_organization_backend.model.Groups;
-import com.aluminate.aluminate_organization_backend.model.Member;
-import com.aluminate.aluminate_organization_backend.model.MemberGroup;
-import com.aluminate.aluminate_organization_backend.model.Organization;
+import com.aluminate.aluminate_organization_backend.model.*;
 import com.aluminate.aluminate_organization_backend.repository.GroupsRepository;
 import com.aluminate.aluminate_organization_backend.repository.MemberGroupRepository;
 import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
@@ -81,9 +78,20 @@ public class MemberServiceImpl implements IMemberService {
 
             MemberGroup memberGroup = new MemberGroup();
             memberGroup.setMember(savedMember);
-            memberGroup.setGroup(group);
-            memberGroup.setApproved(true);
+
             memberGroup.setRole("MEMBER");
+            if(group.isRequiredApproval()){
+
+                memberGroup.setApproved(false);
+                memberGroup.setRequestStatus(GroupJoinRequestStatus.PENDING);
+            }else{
+
+                memberGroup.setApproved(true);
+                memberGroup.setRequestStatus(GroupJoinRequestStatus.APPROVED);
+            }
+            memberGroup.setGroup(group);
+
+
             memberGroupRepository.save(memberGroup);
         }
         return savedMember;
@@ -319,7 +327,7 @@ public class MemberServiceImpl implements IMemberService {
         return MemberResponseDTO.builder()
                 .name(m.getName())
                 .nic(m.getNic())
-                .is_active(m.isActive())
+                .isActive(m.isActive())
                 .phone(m.getPhone())
                 .email(m.getEmail())
                 .regNo(m.getRegNo())

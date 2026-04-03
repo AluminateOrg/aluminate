@@ -187,6 +187,7 @@ public class AuthService {
 
 
                 Organization organization = Organization.builder()
+                        .id(organizationDTO.getId())
                         .organizationName(organizationDTO.getOrganizationName())
                         .maxMemberCount(organizationDTO.getMaxMemberCount())
                         .currentMemberCount(organizationDTO.getCurrentMemberCount())
@@ -303,29 +304,30 @@ public class AuthService {
         String sessionId = UUID.randomUUID().toString();
         String csrfToken = csrfTokenService.generateAndStoreToken(sessionId);
 
-        String cookiePath = "/" + orgSlug;
-
         ResponseCookie jwtCookie = ResponseCookie.from("jwt", token)
                 .httpOnly(true)
-                .secure(false)
-                .sameSite("Strict")
-                .path(cookiePath)
+                .secure(true)
+                .sameSite("None")
+                .domain(".athenyxsystems.com")
+                .path("/")
                 .maxAge(Duration.ofDays(1))
                 .build();
 
         ResponseCookie csrfCookie = ResponseCookie.from("csrf-token", csrfToken)
                 .httpOnly(false)
-                .secure(false)
-                .sameSite("Strict")
-                .path(cookiePath)
+                .secure(true)
+                .sameSite("None")
+                .domain(".athenyxsystems.com")
+                .path("/")
                 .maxAge(Duration.ofDays(1))
                 .build();
 
         ResponseCookie sessionCookie = ResponseCookie.from("sessionId", sessionId)
                 .httpOnly(false)
-                .secure(false)
-                .sameSite("Strict")
-                .path(cookiePath)
+                .secure(true)
+                .sameSite("None")
+                .domain(".athenyxsystems.com")
+                .path("/")
                 .maxAge(Duration.ofDays(1))
                 .build();
 

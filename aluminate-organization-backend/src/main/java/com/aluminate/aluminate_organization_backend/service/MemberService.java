@@ -11,6 +11,8 @@ import com.aluminate.aluminate_organization_backend.repository.MemberGroupReposi
 import com.aluminate.aluminate_organization_backend.repository.MemberRepository;
 import com.aluminate.aluminate_organization_backend.repository.OrganizationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -93,7 +95,7 @@ public class MemberService {
                         .nic(member.getNic())
                         .phone(member.getPhone())
                         .email(member.getEmail())
-                        .is_active(member.isActive())
+                        .isActive(member.isActive())
                         .regNo(member.getRegNo())
                         .address(member.getAddress())
                         .photoUrl(member.getPhotoUrl())
@@ -108,5 +110,41 @@ public class MemberService {
                         .build())
                 .toList();
     }
+
+    public Page<MemberResponseDTO> searchMembers(String search, String status, Pageable pageable){
+
+        Boolean activeFilter = null;
+        if ("active".equalsIgnoreCase(status)) activeFilter = true;
+        if ("inactive".equalsIgnoreCase(status)) activeFilter = false;
+
+
+        String searchPattern = null;
+        if (search != null && !search.trim().isEmpty()) {
+            searchPattern = "%" + search.toLowerCase() + "%";
+        }
+
+        Page<Member> memberPage = memberRepository.searchMember(searchPattern, activeFilter, pageable);
+        return memberPage.map(member -> MemberResponseDTO.builder()
+                .name(member.getName())
+                .nic(member.getNic())
+                .phone(member.getPhone())
+                .email(member.getEmail())
+                .isActive(member.isActive())
+                .regNo(member.getRegNo())
+                .address(member.getAddress())
+                .photoUrl(member.getPhotoUrl())
+                .degree(member.getDegree())
+                .company(member.getCompany())
+                .position(member.getPosition())
+                .linkedinUrl(member.getLinkedinUrl())
+                .githubUrl(member.getGithubUrl())
+                .websiteUrl(member.getWebsiteUrl())
+                .batch(member.getBatch())
+                .groupIds(memberGroupRepository.findGroupIdsByMemberId(member.getId()))
+                .build());
+
+    }
+
+
 
 }

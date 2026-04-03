@@ -1,6 +1,5 @@
 package com.aluminate.aluminate_organization_backend.model;
 
-
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -9,15 +8,15 @@ import java.time.LocalDateTime;
 
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
 @Entity
 @Builder
-public class Transaction {
+@NoArgsConstructor
+@AllArgsConstructor
+public class IncomingTransaction {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; // This will act as order_id for PayHere
+    private Long id;
 
     @Column(nullable = false)
     private BigDecimal amount;
@@ -25,26 +24,15 @@ public class Transaction {
     @Column(nullable = false)
     private String currency;
 
-    private String paymentId;         // From PayHere
-    private String method;            // e.g. VISA, EZCash
-    private String statusCode;        // e.g. 2 for success
-    private String statusMessage;     // Human-readable message from PayHere
-    private String cardHolderName;
-    private String cardNo;
-    private String cardExpiry;
-
     @Enumerated(EnumType.STRING)
     private TransactionStatus transactionStatus;
 
     @Enumerated(EnumType.STRING)
     private PaymentCategory category;
 
-
-
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    // Who made the transaction
     @ManyToOne
     @JoinColumn(
             name = "organization_id",
@@ -56,19 +44,20 @@ public class Transaction {
     )
     private Organization organization;
 
-    @ManyToOne
+    @OneToOne
     @JoinColumn(
-            name = "member_id",
+            name = "transaction_id",
+            nullable = false,
             foreignKey = @ForeignKey(
-                    name = "fk_transaction_member",
-                    foreignKeyDefinition = "FOREIGN KEY (member_id) REFERENCES member(id) ON UPDATE CASCADE ON DELETE SET NULL"
+                    name = "fk_incomingTransaction_transaction",
+                    foreignKeyDefinition = "FOREIGN KEY (transaction_id) REFERENCES transaction(id) ON UPDATE CASCADE ON DELETE CASCADE"
             )
     )
-    private Member member;
+    private Transaction transaction;
 
+    @Builder.Default
+    private Boolean staged = false;
 
-    public boolean isPresent() {
-        return this.id != null;
-    }
+    @Builder.Default
+    private Boolean ack = false;
 }
-
