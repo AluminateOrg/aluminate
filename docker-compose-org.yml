@@ -1,9 +1,9 @@
 version: '3.9'
 
 services:
-  # -------------------------------------------------------------------
+  # -----------------------------
   # 1. DATABASE (PostgreSQL)
-  # -------------------------------------------------------------------
+  # -----------------------------
   database:
     image: postgres:15
     container_name: ${ORG_SLUG}-postgres
@@ -17,9 +17,9 @@ services:
     networks:
       - aluminate-network
 
-  # -------------------------------------------------------------------
+  # -----------------------------
   # 2. MONGO DB
-  # -------------------------------------------------------------------
+  # -----------------------------
   mongo:
     image: mongo:6.0
     container_name: ${ORG_SLUG}-mongo
@@ -32,9 +32,9 @@ services:
     networks:
       - aluminate-network
 
-  # -------------------------------------------------------------------
+  # -----------------------------
   # 3. REDIS
-  # -------------------------------------------------------------------
+  # -----------------------------
   redis:
     image: redis:7
     container_name: ${ORG_SLUG}-redis
@@ -44,9 +44,9 @@ services:
     networks:
       - aluminate-network
 
-  # -------------------------------------------------------------------
+  # -----------------------------
   # 4. BACKEND (Spring Boot Organization Backend)
-  # -------------------------------------------------------------------
+  # -----------------------------
   backend:
     build:
       context: /app/aluminate/aluminate-organization-backend
@@ -61,8 +61,7 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       MONGO_URI: mongodb://mongo_root:mongo_password@mongo:27017/aluminate_chat?authSource=admin
-
-      GLOBAL_BACKEND_URL: "http://global-backend:${GLOBAL_PORT}"
+      GLOBAL_BACKEND_URL: "http://global-backend:8080"
       ORG_SLUG: ${ORG_SLUG}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
@@ -83,45 +82,39 @@ services:
 
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.${ORG_SLUG}-backend.rule=Host(`${TRAEFIK_HOST}`) && PathPrefix(`/${ORG_SLUG}/backend`)"
-      - "traefik.http.routers.${ORG_SLUG}-backend.entrypoints=web"
+      - "traefik.http.routers.${ORG_SLUG}-backend.rule=Host(`${ORG_SLUG}.${TRAEFIK_HOST}`)"
+      - "traefik.http.routers.${ORG_SLUG}-backend.entrypoints=websecure"
+      - "traefik.http.routers.${ORG_SLUG}-backend.tls.certresolver=letsencrypt"
       - "traefik.http.services.${ORG_SLUG}-backend.loadbalancer.server.port=8098"
-      - "traefik.http.middlewares.${ORG_SLUG}-backend-strip.stripprefix.prefixes=/${ORG_SLUG}/backend"
-      - "traefik.http.routers.${ORG_SLUG}-backend.middlewares=${ORG_SLUG}-backend-strip"
 
     networks:
       - aluminate-network
 
-  # -------------------------------------------------------------------
+  # -----------------------------
   # 5. FRONTEND (Next.js Organization Frontend)
-  # -------------------------------------------------------------------
+  # -----------------------------
   frontend:
     build:
       context: /app/aluminate/aluminate-organization-frontend
       dockerfile: Dockerfile
       args:
         ORG_SLUG: ${ORG_SLUG}
-        NEXT_PUBLIC_BACKEND_URL: "http://${TRAEFIK_HOST}:${TRAEFIK_PORT}/${ORG_SLUG}/backend"
+        NEXT_PUBLIC_BACKEND_URL: "https://${ORG_SLUG}.${TRAEFIK_HOST}"
         NEXT_PUBLIC_API_PREFIX: "${API_PREFIX}"
         NEXT_PUBLIC_ORGANIZATION_PUBLIC_KEY: ${NEXT_PUBLIC_ORGANIZATION_PUBLIC_KEY}
-        NEXT_PUBLIC_WS_URL: "ws://${TRAEFIK_HOST}:${TRAEFIK_PORT}/${ORG_SLUG}"
+        NEXT_PUBLIC_WS_URL: "wss://${ORG_SLUG}.${TRAEFIK_HOST}"
         NEXT_PUBLIC_PAYHERE_MERCHANT_ID: ${NEXT_PUBLIC_PAYHERE_MERCHANT_ID}
     depends_on:
       - backend
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.${ORG_SLUG}-frontend.rule=Host(`${TRAEFIK_HOST}`) && PathPrefix(`/${ORG_SLUG}`) && !PathPrefix(`/${ORG_SLUG}/backend`)"
-      - "traefik.http.routers.${ORG_SLUG}-frontend.entrypoints=web"
-      - "traefik.http.routers.${ORG_SLUG}-frontend.priority=10"
+      - "traefik.http.routers.${ORG_SLUG}-frontend.rule=Host(`${ORG_SLUG}.${TRAEFIK_HOST}`)"
+      - "traefik.http.routers.${ORG_SLUG}-frontend.entrypoints=websecure"
+      - "traefik.http.routers.${ORG_SLUG}-frontend.tls.certresolver=letsencrypt"
       - "traefik.http.services.${ORG_SLUG}-frontend.loadbalancer.server.port=3000"
-      - "traefik.http.middlewares.${ORG_SLUG}-strip-prefix.stripprefix.prefixes=/${ORG_SLUG}"
-      - "traefik.http.routers.${ORG_SLUG}-frontend.middlewares=${ORG_SLUG}-strip-prefix"
     networks:
       - aluminate-network
 
-# ============================================================
-# VOLUMES & NETWORKS
-# ============================================================
 volumes:
   ${ORG_SLUG}_pgdata:
   ${ORG_SLUG}_mongo_data:
