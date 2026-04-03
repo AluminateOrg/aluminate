@@ -13,7 +13,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - ${ORG_SLUG}_pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
     networks:
       - aluminate-network
 
@@ -28,7 +28,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: mongo_root
       MONGO_INITDB_ROOT_PASSWORD: 24b29e5b1f2558774a1057f23dd8e37cf5c41e0cbe6196faebfdcedb5a0d9849
     volumes:
-      - ${ORG_SLUG}_mongo_data:/data/db
+      - mongo_data:/data/db
     networks:
       - aluminate-network
 
@@ -40,7 +40,7 @@ services:
     container_name: ${ORG_SLUG}-redis
     restart: unless-stopped
     volumes:
-      - ${ORG_SLUG}_redis_data:/data
+      - redis_data:/data
     networks:
       - aluminate-network
 
@@ -49,7 +49,7 @@ services:
   # -----------------------------
   backend:
     build:
-      context: /app/aluminate/aluminate-organization-backend
+      context: ./aluminate-organization-backend
       dockerfile: Dockerfile
     depends_on:
       - database
@@ -58,8 +58,9 @@ services:
     environment:
       ORGANIZATION_PORT: 8098
       SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/aluminatedb
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_HOST: ${SPRING_REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${SPRING_REDIS_PORT}
+      SPRING_DATA_REDIS_URI: ${SPRING_DATA_REDIS_URI}
       MONGO_URI: mongodb://mongo_root:24b29e5b1f2558774a1057f23dd8e37cf5c41e0cbe6196faebfdcedb5a0d9849@mongo:27017/aluminate_chat?authSource=admin
       GLOBAL_BACKEND_URL: "http://global-backend:8080"
       ORG_SLUG: ${ORG_SLUG}
@@ -93,7 +94,7 @@ services:
   # -----------------------------
   frontend:
     build:
-      context: /app/aluminate/aluminate-organization-frontend
+      context: ./aluminate-organization-frontend
       dockerfile: Dockerfile
       args:
         ORG_SLUG: ${ORG_SLUG}
@@ -116,9 +117,9 @@ services:
       - aluminate-network
 
 volumes:
-  ${ORG_SLUG}_pgdata:
-  ${ORG_SLUG}_mongo_data:
-  ${ORG_SLUG}_redis_data:
+  pgdata:
+  mongo_data:
+  redis_data:
 
 networks:
   aluminate-network:
