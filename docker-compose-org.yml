@@ -26,7 +26,7 @@ services:
     restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: mongo_root
-      MONGO_INITDB_ROOT_PASSWORD: mongo_password
+      MONGO_INITDB_ROOT_PASSWORD: 24b29e5b1f2558774a1057f23dd8e37cf5c41e0cbe6196faebfdcedb5a0d9849
     volumes:
       - ${ORG_SLUG}_mongo_data:/data/db
     networks:
@@ -60,7 +60,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/aluminatedb
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
-      MONGO_URI: mongodb://mongo_root:mongo_password@mongo:27017/aluminate_chat?authSource=admin
+      MONGO_URI: mongodb://mongo_root:24b29e5b1f2558774a1057f23dd8e37cf5c41e0cbe6196faebfdcedb5a0d9849@mongo:27017/aluminate_chat?authSource=admin
       GLOBAL_BACKEND_URL: "http://global-backend:8080"
       ORG_SLUG: ${ORG_SLUG}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
@@ -79,14 +79,12 @@ services:
       SPRING_MAIL_PORT: ${SPRING_MAIL_PORT}
       SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME}
       SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
-
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.${ORG_SLUG}-backend.rule=Host(`${ORG_SLUG}.${TRAEFIK_HOST}`)"
+      - "traefik.http.routers.${ORG_SLUG}-backend.rule=Host(`${ORG_SLUG}.api.${TRAEFIK_HOST}`)"
       - "traefik.http.routers.${ORG_SLUG}-backend.entrypoints=websecure"
       - "traefik.http.routers.${ORG_SLUG}-backend.tls.certresolver=letsencrypt"
       - "traefik.http.services.${ORG_SLUG}-backend.loadbalancer.server.port=8098"
-
     networks:
       - aluminate-network
 
@@ -99,13 +97,15 @@ services:
       dockerfile: Dockerfile
       args:
         ORG_SLUG: ${ORG_SLUG}
-        NEXT_PUBLIC_BACKEND_URL: "https://${ORG_SLUG}.${TRAEFIK_HOST}"
+        NEXT_PUBLIC_BACKEND_URL: "https://${ORG_SLUG}.api.${TRAEFIK_HOST}"
         NEXT_PUBLIC_API_PREFIX: "${API_PREFIX}"
         NEXT_PUBLIC_ORGANIZATION_PUBLIC_KEY: ${NEXT_PUBLIC_ORGANIZATION_PUBLIC_KEY}
-        NEXT_PUBLIC_WS_URL: "wss://${ORG_SLUG}.${TRAEFIK_HOST}"
+        NEXT_PUBLIC_WS_URL: "wss://${ORG_SLUG}.api.${TRAEFIK_HOST}"
         NEXT_PUBLIC_PAYHERE_MERCHANT_ID: ${NEXT_PUBLIC_PAYHERE_MERCHANT_ID}
     depends_on:
       - backend
+    environment:
+      PORT: 3000
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${ORG_SLUG}-frontend.rule=Host(`${ORG_SLUG}.${TRAEFIK_HOST}`)"
