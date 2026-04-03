@@ -304,33 +304,30 @@ public class AuthService {
         String sessionId = UUID.randomUUID().toString();
         String csrfToken = csrfTokenService.generateAndStoreToken(sessionId);
 
-        //for production
-//        String cookiePath = "/" + orgSlug;
-
-        //for local testing
-        String cookiePath = "/";
-
         ResponseCookie jwtCookie = ResponseCookie.from("jwt", token)
                 .httpOnly(true)
-                .secure(false)
-                .sameSite("Strict")
-                .path(cookiePath)
+                .secure(true)
+                .sameSite("None")
+                .domain(".athenyxsystems.com")
+                .path("/")
                 .maxAge(Duration.ofDays(1))
                 .build();
 
         ResponseCookie csrfCookie = ResponseCookie.from("csrf-token", csrfToken)
                 .httpOnly(false)
-                .secure(false)
-                .sameSite("Strict")
-                .path(cookiePath)
+                .secure(true)
+                .sameSite("None")
+                .domain(".athenyxsystems.com")
+                .path("/")
                 .maxAge(Duration.ofDays(1))
                 .build();
 
         ResponseCookie sessionCookie = ResponseCookie.from("sessionId", sessionId)
                 .httpOnly(false)
-                .secure(false)
-                .sameSite("Strict")
-                .path(cookiePath)
+                .secure(true)
+                .sameSite("None")
+                .domain(".athenyxsystems.com")
+                .path("/")
                 .maxAge(Duration.ofDays(1))
                 .build();
 
