@@ -6,7 +6,6 @@ services:
   # -----------------------------
   database:
     image: postgres:15
-    container_name: ${ORG_SLUG}-postgres
     restart: always
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -22,7 +21,6 @@ services:
   # -----------------------------
   mongo:
     image: mongo:6.0
-    container_name: ${ORG_SLUG}-mongo
     restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: mongo_root
@@ -37,7 +35,6 @@ services:
   # -----------------------------
   redis:
     image: redis:7
-    container_name: ${ORG_SLUG}-redis
     restart: unless-stopped
     volumes:
       - redis_data:/data
