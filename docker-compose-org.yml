@@ -61,7 +61,7 @@ services:
       SPRING_DATA_REDIS_HOST: ${SPRING_REDIS_HOST}
       SPRING_DATA_REDIS_PORT: ${SPRING_REDIS_PORT}
       SPRING_DATA_REDIS_URI: ${SPRING_DATA_REDIS_URI}
-      MONGO_URI: mongodb://mongo_root:24b29e5b1f2558774a1057f23dd8e37cf5c41e0cbe6196faebfdcedb5a0d9849@mongo:27017/aluminate_chat?authSource=admin
+      SPRING_DATA_MONGO_URI: mongodb://mongo_root:24b29e5b1f2558774a1057f23dd8e37cf5c41e0cbe6196faebfdcedb5a0d9849@mongo:27017/aluminate_chat?authSource=admin
       GLOBAL_BACKEND_URL: "http://global-backend:8080"
       ORG_SLUG: ${ORG_SLUG}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
