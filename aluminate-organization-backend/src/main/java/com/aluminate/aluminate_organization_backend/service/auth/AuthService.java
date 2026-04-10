@@ -56,6 +56,15 @@ public class AuthService {
     @Value("${ORG_SLUG}")
     private String orgSlug;
 
+    @Value("${app.cookie.same-site}")
+    private String sameSite;
+
+    @Value("${app.cookie.secure}")
+    private boolean secureCookie;
+
+    @Value("${app.cookie.domain}")
+    private String domain;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
     private PrivateKey orgPrivateKey;
     private PublicKey globalPublicKey;
@@ -305,28 +314,28 @@ public class AuthService {
         String csrfToken = csrfTokenService.generateAndStoreToken(sessionId);
 
         ResponseCookie jwtCookie = ResponseCookie.from("jwt", token)
+                .domain(domain)
                 .httpOnly(true)
-                .secure(true)
-                .sameSite("None")
-                .domain(".athenyxsystems.com")
+                .secure(secureCookie)
+                .sameSite(sameSite)
                 .path("/")
                 .maxAge(Duration.ofDays(1))
                 .build();
 
         ResponseCookie csrfCookie = ResponseCookie.from("csrf-token", csrfToken)
+                .domain(domain)
                 .httpOnly(false)
-                .secure(true)
-                .sameSite("None")
-                .domain(".athenyxsystems.com")
+                .secure(secureCookie)
+                .sameSite(sameSite)
                 .path("/")
                 .maxAge(Duration.ofDays(1))
                 .build();
 
         ResponseCookie sessionCookie = ResponseCookie.from("sessionId", sessionId)
+                .domain(domain)
                 .httpOnly(false)
-                .secure(true)
-                .sameSite("None")
-                .domain(".athenyxsystems.com")
+                .secure(secureCookie)
+                .sameSite(sameSite)
                 .path("/")
                 .maxAge(Duration.ofDays(1))
                 .build();

@@ -38,6 +38,15 @@ public class AuthController {
     @Value("${ORG_SLUG}")
     private String orgSlug;
 
+    @Value("${app.cookie.same-site}")
+    private String sameSite;
+
+    @Value("${app.cookie.secure}")
+    private boolean secureCookie;
+
+    @Value("${app.cookie.domain}")
+    private String domain;
+
     private PrivateKey organizationPrivateKey;
 
     @PostConstruct
@@ -95,28 +104,30 @@ public class AuthController {
 //        String cookiePath = "/" + orgSlug;
 
         //dev
-        String cookiePath = "/";
         ResponseCookie jwtCookie = ResponseCookie.from("jwt", "")
+                .domain(domain)
                 .httpOnly(true)
-                .secure(false)
-                .sameSite("Strict")
-                .path(cookiePath)
+                .secure(secureCookie)
+                .sameSite(sameSite)
+                .path("/")
                 .maxAge(0)
                 .build();
 
         ResponseCookie csrfCookie = ResponseCookie.from("csrf-token", "")
+                .domain(domain)
                 .httpOnly(false)
-                .secure(false)
-                .sameSite("Strict")
-                .path(cookiePath)
+                .secure(secureCookie)
+                .sameSite(sameSite)
+                .path("/")
                 .maxAge(0)
                 .build();
 
         ResponseCookie sessionCookie = ResponseCookie.from("sessionId", "")
-                .httpOnly(false)
-                .secure(false)
-                .sameSite("Strict")
-                .path(cookiePath)
+                .domain(domain)
+                .httpOnly(secureCookie)
+                .secure(secureCookie)
+                .sameSite(sameSite)
+                .path("/")
                 .maxAge(0)
                 .build();
 
