@@ -77,7 +77,7 @@ services:
       - aluminate-network
 
   frontend:
-    image: aluminate/org-frontend:latest
+    image: aluminate/org-frontend:${ORG_SLUG}
     container_name: ${ORG_SLUG}-org-frontend
     depends_on:
       - backend
