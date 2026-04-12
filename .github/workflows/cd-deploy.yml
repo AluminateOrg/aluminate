@@ -1,0 +1,103 @@
+name: Org Backend CD
+
+on:
+  push:
+    branches: [ production ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-org-backend-cd
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build Application
+        run: mvn -B clean package -DskipTests --no-transfer-progress
+
+      - name: Build Docker Image
+        run: |
+          docker build --pull \
+            -t aluminate/org-backend:${{ github.sha }} \
+            -t aluminate/org-backend:latest \
+            .
+
+      - name: Save Docker Image
+        run: docker save aluminate/org-backend:latest | gzip > org-backend.tar.gz
+
+      - name: Copy Image to Droplet
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: org-backend.tar.gz
+          target: /opt/aluminate/app/aluminate/
+          rm: false
+
+      - name: Load & Restart All Org Backends on Droplet
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -euo pipefail
+
+            echo "Loading new Docker image..."
+            cd /opt/aluminate/app/aluminate
+            docker load < org-backend.tar.gz
+            rm -f org-backend.tar.gz
+
+            echo "Finding all running org backend containers..."
+            BACKENDS=$(docker ps --filter "name=-org-backend" --format "{{.Names}}")
+
+            if [ -z "$BACKENDS" ]; then
+              echo "No running org backend containers found. Exiting."
+              exit 0
+            fi
+
+            echo "Found: $BACKENDS"
+
+            for CONTAINER in $BACKENDS; do
+              ORG_SLUG=$(echo "$CONTAINER" | sed 's/-org-backend//')
+              echo "--------------------------------------------"
+              echo "Recreating backend for org: $ORG_SLUG"
+
+              ORG_SLUG=$ORG_SLUG docker compose \
+                -f /opt/aluminate/app/aluminate/docker-compose-org.yml \
+                -p "$ORG_SLUG" \
+                up -d --force-recreate --no-deps backend
+
+              echo "Done: $ORG_SLUG"
+            done
+
+            echo "--------------------------------------------"
+            echo "Cleaning unused images..."
+            docker image prune -f
+
+            echo "Waiting for startups..."
+            sleep 15
+
+            echo "Container status:"
+            docker ps | grep "\-org-backend"
+
+            echo "Deployment complete"
+
+      - name: Deployment Success
+        run: echo "All Org Backends deployed to Production"
