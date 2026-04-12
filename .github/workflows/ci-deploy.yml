@@ -17,6 +17,9 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: aluminate-organization-backend
 
     steps:
       - name: Checkout Repository
