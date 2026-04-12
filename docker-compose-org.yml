@@ -1,11 +1,9 @@
 version: '3.9'
 
 services:
-  # -----------------------------
-  # 1. DATABASE (PostgreSQL)
-  # -----------------------------
   database:
     image: postgres:15
+    container_name: ${ORG_SLUG}-org-postgres
     restart: always
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -16,11 +14,9 @@ services:
     networks:
       - aluminate-network
 
-  # -----------------------------
-  # 2. MONGO DB
-  # -----------------------------
   mongo:
     image: mongo:6.0
+    container_name: ${ORG_SLUG}-org-mongo
     restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: mongo_root
@@ -30,24 +26,18 @@ services:
     networks:
       - aluminate-network
 
-  # -----------------------------
-  # 3. REDIS
-  # -----------------------------
   redis:
     image: redis:7
+    container_name: ${ORG_SLUG}-org-redis
     restart: unless-stopped
     volumes:
       - redis_data:/data
     networks:
       - aluminate-network
 
-  # -----------------------------
-  # 4. BACKEND (Spring Boot Organization Backend)
-  # -----------------------------
   backend:
-    build:
-      context: ./aluminate-organization-backend
-      dockerfile: Dockerfile
+    image: aluminate/org-backend:latest
+    container_name: ${ORG_SLUG}-org-backend
     depends_on:
       - database
       - redis
@@ -86,20 +76,9 @@ services:
     networks:
       - aluminate-network
 
-  # -----------------------------
-  # 5. FRONTEND (Next.js Organization Frontend)
-  # -----------------------------
   frontend:
-    build:
-      context: ./aluminate-organization-frontend
-      dockerfile: Dockerfile
-      args:
-        ORG_SLUG: ${ORG_SLUG}
-        NEXT_PUBLIC_BACKEND_URL: "https://${ORG_SLUG}.api.${TRAEFIK_HOST}"
-        NEXT_PUBLIC_API_PREFIX: "${API_PREFIX}"
-        NEXT_PUBLIC_ORGANIZATION_PUBLIC_KEY: ${NEXT_PUBLIC_ORGANIZATION_PUBLIC_KEY}
-        NEXT_PUBLIC_WS_URL: "wss://${ORG_SLUG}.api.${TRAEFIK_HOST}"
-        NEXT_PUBLIC_PAYHERE_MERCHANT_ID: ${NEXT_PUBLIC_PAYHERE_MERCHANT_ID}
+    image: aluminate/org-frontend:latest
+    container_name: ${ORG_SLUG}-org-frontend
     depends_on:
       - backend
     environment:
