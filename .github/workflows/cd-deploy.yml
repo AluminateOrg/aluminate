@@ -69,26 +69,24 @@ jobs:
             rm -f org-backend.tar.gz
 
             echo "Finding all running org backend containers..."
-            BACKENDS=$(docker ps --filter "name=-org-backend" --format "{{.Names}}")
 
-            if [ -z "$BACKENDS" ]; then
-              echo "No running org backend containers found. Exiting."
-              exit 0
-            fi
+            for ENV_FILE in /opt/aluminate/tenants/*.env; do
+              ORG_SLUG=$(grep '^ORG_SLUG=' "$ENV_FILE" | cut -d= -f2)
 
-            echo "Found: $BACKENDS"
+              if docker ps --format "{{.Names}}" | grep -q "^${ORG_SLUG}-org-backend$"; then
+                echo "--------------------------------------------"
+                echo "Recreating backend for org: $ORG_SLUG"
 
-            for CONTAINER in $BACKENDS; do
-              ORG_SLUG=$(echo "$CONTAINER" | sed 's/-org-backend//')
-              echo "--------------------------------------------"
-              echo "Recreating backend for org: $ORG_SLUG"
+                docker compose \
+                  -f /opt/aluminate/app/aluminate/docker-compose-org.yml \
+                  -p "$ORG_SLUG" \
+                  --env-file "/opt/aluminate/tenants/${ORG_SLUG}.env" \
+                  up -d --force-recreate --no-deps backend
 
-              ORG_SLUG=$ORG_SLUG docker compose \
-                -f /opt/aluminate/app/aluminate/docker-compose-org.yml \
-                -p "$ORG_SLUG" \
-                up -d --force-recreate --no-deps backend
-
-              echo "Done: $ORG_SLUG"
+                echo "Done: $ORG_SLUG"
+              else
+                echo "Skipping $ORG_SLUG — backend not running"
+              fi
             done
 
             echo "--------------------------------------------"
