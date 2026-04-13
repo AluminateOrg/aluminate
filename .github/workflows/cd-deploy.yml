@@ -77,8 +77,8 @@ jobs:
                 echo "--------------------------------------------"
                 echo "Recreating backend for org: $ORG_SLUG"
 
-                docker compose \
-                  -f /opt/aluminate/app/aluminate/docker-compose-org.yml \
+                export ORG_SLUG && docker compose \
+                  -f /opt/aluminate/config/docker-compose-org.yml \
                   -p "$ORG_SLUG" \
                   --env-file "/opt/aluminate/tenants/${ORG_SLUG}.env" \
                   up -d --force-recreate --no-deps backend
