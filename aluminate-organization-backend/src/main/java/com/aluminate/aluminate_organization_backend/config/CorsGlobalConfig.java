@@ -1,5 +1,6 @@
 package com.aluminate.aluminate_organization_backend.config;
 
+    import org.springframework.beans.factory.annotation.Value;
     import org.springframework.context.annotation.Bean;
     import org.springframework.context.annotation.Configuration;
     import org.springframework.web.cors.CorsConfiguration;
@@ -15,25 +16,18 @@ package com.aluminate.aluminate_organization_backend.config;
     @Configuration
     public class CorsGlobalConfig {
 
-        /**
-         * Creates and configures a CORS filter bean.
-         * This filter allows cross-origin requests from specified origins with specific methods and headers.
-         *
-         * @return a CorsFilter instance configured with the specified CORS settings
-         */
+        @Value("${FRONTEND_URL}")
+        private String frontendUrl;
+
         @Bean
         public CorsFilter corsFilter() {
 
             CorsConfiguration config = new CorsConfiguration();
 
-            // Specifies the allowed origins for cross-origin requests
-            config.addAllowedOriginPattern("*"); // use this instead of setAllowedOrigins() to support wildcards
+            config.setAllowedOrigins(List.of(frontendUrl));
 
-
-            // Specifies the allowed HTTP methods for cross-origin requests
             config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 
-            // Specifies the allowed headers for cross-origin requests
             config.setAllowedHeaders(List.of(
                     "Authorization",
                     "Content-Type",
@@ -42,16 +36,16 @@ package com.aluminate.aluminate_organization_backend.config;
                     "Accept",
                     "X-Session-Id"
             ));
+
             config.setExposedHeaders(List.of("Set-Cookie", "X-CSRF-TOKEN"));
 
-            // Allows credentials (e.g., cookies) to be included in cross-origin requests
             config.setAllowCredentials(true);
 
-            // Registers the CORS configuration for all paths
             UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
             source.registerCorsConfiguration("/**", config);
 
-            System.out.println("CORS filter initialized with allowed origins: " + config.getAllowedOrigins());
+            System.out.println("CORS allowed origin: " + frontendUrl);
+
             return new CorsFilter(source);
         }
     }
